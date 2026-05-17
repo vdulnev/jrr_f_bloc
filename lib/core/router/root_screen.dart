@@ -5,14 +5,14 @@ import '../../features/connection/bloc/session_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
 import '../../features/connection/data/models/server_info.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
+import '../../features/player/widgets/mini_player_panel.dart';
+import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../theme/app_theme.dart';
 
-/// Phase 3/4 root: swap between login and a placeholder authenticated shell
-/// based on [SessionState]. The full auto_route tree with library / queue /
-/// player tabs comes back in Phase 9. As later phases ship, this shell adds
-/// the corresponding screens behind a simple tab bar.
+/// Phase 5 root: swaps between login and a placeholder shell that surfaces
+/// the screens shipped so far. The proper auto_route tree lands in Phase 9.
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});
 
@@ -44,21 +44,40 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _tab,
-        children: [_ServerInfoView(serverInfo: widget.serverInfo), const ZoneListScreen()],
+      body: Column(
+        children: [
+          Expanded(
+            child: IndexedStack(
+              index: _tab,
+              children: [
+                const NowPlayingScreen(),
+                const ZoneListScreen(),
+                _ServerInfoView(serverInfo: widget.serverInfo),
+              ],
+            ),
+          ),
+          if (_tab != 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+              child: MiniPlayerPanel(onItemTap: () => setState(() => _tab = 0)),
+            ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dns_outlined),
-            label: 'Server',
+            icon: Icon(Icons.album_outlined),
+            label: 'Playing',
           ),
           NavigationDestination(
             icon: Icon(Icons.speaker_group_outlined),
             label: 'Zones',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.dns_outlined),
+            label: 'Server',
           ),
         ],
       ),
@@ -86,10 +105,7 @@ class _ServerInfoView extends StatelessWidget {
                     children: [
                       Text('CONNECTED', style: AppTextStyles.sectionLabel),
                       SizedBox(height: 6),
-                      Text(
-                        'Server',
-                        style: AppTextStyles.screenTitle,
-                      ),
+                      Text('Server', style: AppTextStyles.screenTitle),
                     ],
                   ),
                 ),
