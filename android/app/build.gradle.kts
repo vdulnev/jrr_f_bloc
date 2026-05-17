@@ -39,6 +39,11 @@ android {
     }
 }
 
+dependencies {
+    // Android Auto / Automotive OS: observe CarConnection from MainActivity.
+    implementation("androidx.car.app:app:1.4.0")
+}
+
 flutter {
     source = "../.."
 }

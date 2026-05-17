@@ -14,6 +14,8 @@ import 'core/di/injection.dart';
 import 'core/logging/file_log_observer.dart';
 import 'core/network/ssl_trust.dart';
 import 'features/player/data/models/local_audio_quality.dart';
+import 'features/player/services/android_auto_player_service.dart';
+import 'features/player/services/jrr_audio_handler.dart';
 import 'features/player/services/local_player_service.dart';
 
 Future<void> main() async {
@@ -49,20 +51,34 @@ Future<void> main() async {
     ),
   );
 
-  // Initialize audio_service. Phase 10 replaces this with the composite
-  // JrrAudioHandler that swaps in AndroidAutoPlayerService for the car;
-  // until then LocalPlayerService is the only handler.
+  // Composite audio handler — phone-side playback lives in
+  // LocalPlayerService, head-unit playback in AndroidAutoPlayerService.
+  // JrrAudioHandler pipes whichever is "active" to the system notification
+  // and lock-screen controls. The MediaBrowser overrides always route to
+  // the AA player so the head-unit's getChildren / playFromMediaId / etc.
+  // hit the right service even when the active zone is local.
   final localAudioPlayer = AudioPlayer();
+  final autoAudioPlayer = AudioPlayer();
+
+  LocalAudioQuality resolveQuality() => LocalAudioQuality.fromName(
+    getIt<SharedPreferences>().getString('local_audio_quality'),
+  );
+
   final localHandler = LocalPlayerService(
     player: localAudioPlayer,
     talker: talker,
-    qualityResolver: () => LocalAudioQuality.fromName(
-      getIt<SharedPreferences>().getString('local_audio_quality'),
-    ),
+    qualityResolver: resolveQuality,
   );
 
-  await AudioService.init(
-    builder: () => localHandler,
+  final autoHandler = AndroidAutoPlayerService(
+    player: autoAudioPlayer,
+    talker: talker,
+    qualityResolver: resolveQuality,
+  );
+
+  final mainHandler = await AudioService.init(
+    builder: () =>
+        JrrAudioHandler(localPlayer: localHandler, autoPlayer: autoHandler),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.jriver.remote.audio',
       androidNotificationChannelName: 'JRiver Remote playback',
@@ -70,9 +86,13 @@ Future<void> main() async {
       androidNotificationOngoing: true,
     ),
   );
+
   await localHandler.init();
+  await autoHandler.init();
 
   getIt.registerSingleton<LocalPlayerService>(localHandler);
+  getIt.registerSingleton<AndroidAutoPlayerService>(autoHandler);
+  getIt.registerSingleton<JrrAudioHandler>(mainHandler);
 
   // Framework errors (widget build exceptions, layout overflows, etc.)
   FlutterError.onError = (FlutterErrorDetails details) {

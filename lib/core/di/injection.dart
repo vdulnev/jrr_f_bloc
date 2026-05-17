@@ -26,6 +26,7 @@ import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
+import '../../features/zones/services/android_auto_session_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -92,4 +93,13 @@ Future<void> configureDependencies() async {
 
   // Favorites repository — manages favorite items from the browse screen.
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
+
+  // Android Auto session detection — flipped to "connected" the first time
+  // Auto calls into the audio handler's browse API and back to
+  // "disconnected" after a debounced inactivity timeout. Constructed here
+  // so the AA player service can resolve it during its getChildren
+  // override.
+  getIt.registerSingleton<AndroidAutoSessionService>(
+    AndroidAutoSessionService(),
+  );
 }

@@ -6,6 +6,7 @@ import 'package:talker/talker.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/di/injection.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../queue/data/repositories/local_queue_repository.dart';
@@ -15,6 +16,8 @@ import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
+import '../services/android_auto_player_service.dart';
+import '../services/jrr_audio_handler.dart';
 import '../services/local_player_service.dart';
 import 'player_controller.dart';
 import 'player_state.dart';
@@ -159,6 +162,20 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   }
 
   Future<void> _onZoneChanged(Zone? zone) async {
+    // Pipe system controls (lock screen / notification) to whichever sub-
+    // handler matches the zone. Manual user-driven zone picks land here;
+    // AndroidAutoSessionService also calls switchTo when the car binds.
+    if (getIt.isRegistered<JrrAudioHandler>()) {
+      final handler = getIt<JrrAudioHandler>();
+      if (zone?.isAndroidAuto == true) {
+        if (getIt.isRegistered<AndroidAutoPlayerService>()) {
+          handler.switchTo(getIt<AndroidAutoPlayerService>());
+        }
+      } else {
+        handler.switchTo(_service);
+      }
+    }
+
     if (zone == null ||
         (!zone.isLocal && !zone.isOffline && !zone.isAndroidAuto)) {
       _recompute();

@@ -5,6 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/mcws_client.dart';
 import '../../../connection/data/repositories/connection_repository.dart';
+import '../../services/android_auto_session_service.dart';
 import '../models/zone.dart';
 import 'zone_repository.dart';
 
@@ -12,9 +13,15 @@ const _localZones = [Zone.local, Zone.offline];
 
 class ZoneRepositoryImpl implements ZoneRepository {
   /// Appends [Zone.androidAuto] when an Auto session is currently bound.
-  /// Phase 10 wires the actual session service; until then the AA zone is
-  /// never surfaced from this repository.
-  List<Zone> _withAndroidAuto(List<Zone> zones) => zones;
+  /// Detection is driven by [AndroidAutoSessionService] — the zone
+  /// disappears from the picker shortly after the car disconnects.
+  List<Zone> _withAndroidAuto(List<Zone> zones) {
+    if (!getIt.isRegistered<AndroidAutoSessionService>()) return zones;
+    if (getIt<AndroidAutoSessionService>().isConnected.value) {
+      return [...zones, Zone.androidAuto];
+    }
+    return zones;
+  }
 
   @override
   Future<Either<AppException, List<Zone>>> getZones() async {

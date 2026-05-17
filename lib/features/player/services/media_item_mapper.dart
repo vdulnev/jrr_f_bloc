@@ -20,7 +20,8 @@ class MediaItemMapper {
   /// Authority of the FileProvider declared in AndroidManifest.xml.
   /// Kept in sync with `${applicationId}.fileprovider` and the
   /// `<root-path name="root" .../>` element in res/xml/file_paths.xml.
-  static const String _fileProviderAuthority = 'com.jrr.jrr_f.fileprovider';
+  static const String _fileProviderAuthority =
+      'com.example.jrr_f_bloc.fileprovider';
 
   /// Builds a FileProvider content:// URI for a local artwork file, or
   /// `null` if [path] is empty / missing. Public so the AA player can
