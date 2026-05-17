@@ -5,12 +5,14 @@ import '../../features/connection/bloc/session_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
 import '../../features/connection/data/models/server_info.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
+import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../theme/app_theme.dart';
 
-/// Phase 3 root: swap between login and a placeholder authenticated shell
+/// Phase 3/4 root: swap between login and a placeholder authenticated shell
 /// based on [SessionState]. The full auto_route tree with library / queue /
-/// player tabs comes back in Phase 9 once those features exist.
+/// player tabs comes back in Phase 9. As later phases ship, this shell adds
+/// the corresponding screens behind a simple tab bar.
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});
 
@@ -20,7 +22,7 @@ class RootScreen extends StatelessWidget {
       builder: (context, state) => switch (state) {
         Restoring() => const Scaffold(body: LoadingView()),
         Unauthenticated() => const ServerSetupScreen(),
-        Authenticated(:final serverInfo) => _PlaceholderShell(
+        Authenticated(:final serverInfo) => _AuthenticatedShell(
           serverInfo: serverInfo,
         ),
       },
@@ -28,45 +30,81 @@ class RootScreen extends StatelessWidget {
   }
 }
 
-/// Stand-in for the authenticated shell. Phases 4–8 swap individual sections
-/// in (zones, player, queue, library, etc.). This screen exists so the
-/// connection slice is demoable end-to-end.
-class _PlaceholderShell extends StatelessWidget {
+class _AuthenticatedShell extends StatefulWidget {
   final ServerInfo serverInfo;
+  const _AuthenticatedShell({required this.serverInfo});
 
-  const _PlaceholderShell({required this.serverInfo});
+  @override
+  State<_AuthenticatedShell> createState() => _AuthenticatedShellState();
+}
+
+class _AuthenticatedShellState extends State<_AuthenticatedShell> {
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('JRiver Remote'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Logout',
-            onPressed: () => context.read<SessionCubit>().logout(),
+      body: IndexedStack(
+        index: _tab,
+        children: [_ServerInfoView(serverInfo: widget.serverInfo), const ZoneListScreen()],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dns_outlined),
+            label: 'Server',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.speaker_group_outlined),
+            label: 'Zones',
           ),
         ],
       ),
-      body: Padding(
+    );
+  }
+}
+
+class _ServerInfoView extends StatelessWidget {
+  final ServerInfo serverInfo;
+  const _ServerInfoView({required this.serverInfo});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('CONNECTED', style: AppTextStyles.sectionLabel),
-            const SizedBox(height: 8),
-            Text(serverInfo.name, style: AppTextStyles.screenTitle),
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('CONNECTED', style: AppTextStyles.sectionLabel),
+                      SizedBox(height: 6),
+                      Text(
+                        'Server',
+                        style: AppTextStyles.screenTitle,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  tooltip: 'Logout',
+                  onPressed: () => context.read<SessionCubit>().logout(),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
+            _Row(label: 'Name', value: serverInfo.name),
             _Row(label: 'Version', value: serverInfo.version),
             _Row(label: 'Platform', value: serverInfo.platform),
             _Row(label: 'Address', value: serverInfo.address),
-            const SizedBox(height: 24),
-            const Text(
-              'Subsequent phases bring zones, player, queue, library, '
-              'favorites, downloads, and routing.',
-              style: AppTextStyles.itemSubtitle,
-            ),
           ],
         ),
       ),
