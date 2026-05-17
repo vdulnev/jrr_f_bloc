@@ -7,9 +7,14 @@ import 'core/router/root_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'features/connection/bloc/session_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
+import 'features/favorites/bloc/favorites_cubit.dart';
+import 'features/favorites/data/repositories/favorites_repository.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
 import 'features/library/bloc/search_by_file_key_cubit.dart';
 import 'features/library/data/repositories/library_repository.dart';
+import 'features/offline/bloc/download_jobs_cubit.dart';
+import 'features/offline/bloc/downloaded_tracks_cubit.dart';
+import 'features/offline/data/repositories/downloads_repository.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/bloc/local_player_cubit.dart';
 import 'features/player/bloc/mcws_player_bloc.dart';
@@ -92,6 +97,19 @@ class App extends StatelessWidget {
         BlocProvider<SearchByFileKeyCubit>(
           create: (_) =>
               SearchByFileKeyCubit(repository: getIt<LibraryRepository>()),
+        ),
+        BlocProvider<FavoritesCubit>(
+          create: (_) =>
+              FavoritesCubit(repository: getIt<FavoritesRepository>()),
+        ),
+        BlocProvider<DownloadJobsCubit>(
+          create: (_) =>
+              DownloadJobsCubit(repository: getIt<DownloadsRepository>()),
+        ),
+        BlocProvider<DownloadedTracksCubit>(
+          create: (_) => DownloadedTracksCubit(
+            repository: getIt<DownloadsRepository>(),
+          ),
         ),
       ],
       child: RepositoryProvider<PlayerControllerCubit>(

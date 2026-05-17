@@ -9,6 +9,8 @@ import '../bloc/search_bloc.dart';
 import '../data/repositories/library_repository.dart';
 import 'artists_tab.dart';
 import 'browse_tab.dart';
+import 'downloads_tab.dart';
+import 'favorites_tab.dart';
 import 'random_tab.dart';
 import 'search_tab.dart';
 
@@ -17,7 +19,14 @@ import 'search_tab.dart';
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
-  static const _tabs = ['Artists', 'Random', 'Browse', 'Search'];
+  static const _tabs = [
+    'Artists',
+    'Random',
+    'Browse',
+    'Search',
+    'Favorites',
+    'Downloads',
+  ];
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -110,6 +119,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     RandomTab(),
                     BrowseTab(),
                     SearchTab(),
+                    FavoritesTab(),
+                    DownloadsTab(),
                   ],
                 ),
               ),

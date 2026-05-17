@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/connection/bloc/session_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
-import '../../features/connection/data/models/server_info.dart';
+import '../../features/connection/widgets/server_manager_screen.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
@@ -11,10 +11,10 @@ import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/queue/widgets/queue_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
-import '../theme/app_theme.dart';
 
-/// Phase 5 root: swaps between login and a placeholder shell that surfaces
-/// the screens shipped so far. The proper auto_route tree lands in Phase 9.
+/// Phase 8 root: same five-tab shell, now with the full ServerManagerScreen
+/// instead of the stub info view. Phase 9 swaps in auto_route + adaptive
+/// (narrow / wide) layout.
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});
 
@@ -24,17 +24,14 @@ class RootScreen extends StatelessWidget {
       builder: (context, state) => switch (state) {
         Restoring() => const Scaffold(body: LoadingView()),
         Unauthenticated() => const ServerSetupScreen(),
-        Authenticated(:final serverInfo) => _AuthenticatedShell(
-          serverInfo: serverInfo,
-        ),
+        Authenticated() => const _AuthenticatedShell(),
       },
     );
   }
 }
 
 class _AuthenticatedShell extends StatefulWidget {
-  final ServerInfo serverInfo;
-  const _AuthenticatedShell({required this.serverInfo});
+  const _AuthenticatedShell();
 
   @override
   State<_AuthenticatedShell> createState() => _AuthenticatedShellState();
@@ -51,12 +48,12 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
           Expanded(
             child: IndexedStack(
               index: _tab,
-              children: [
-                const NowPlayingScreen(),
-                const QueueScreen(),
-                const LibraryScreen(),
-                const ZoneListScreen(),
-                _ServerInfoView(serverInfo: widget.serverInfo),
+              children: const [
+                NowPlayingScreen(),
+                QueueScreen(),
+                LibraryScreen(),
+                ZoneListScreen(),
+                ServerManagerScreen(),
               ],
             ),
           ),
@@ -90,80 +87,6 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
           NavigationDestination(
             icon: Icon(Icons.dns_outlined),
             label: 'Server',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ServerInfoView extends StatelessWidget {
-  final ServerInfo serverInfo;
-  const _ServerInfoView({required this.serverInfo});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('CONNECTED', style: AppTextStyles.sectionLabel),
-                      SizedBox(height: 6),
-                      Text('Server', style: AppTextStyles.screenTitle),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded),
-                  tooltip: 'Logout',
-                  onPressed: () => context.read<SessionCubit>().logout(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _Row(label: 'Name', value: serverInfo.name),
-            _Row(label: 'Version', value: serverInfo.version),
-            _Row(label: 'Platform', value: serverInfo.platform),
-            _Row(label: 'Address', value: serverInfo.address),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _Row({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(label, style: AppTextStyles.itemSubtitle),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTextStyles.monoLabel.copyWith(
-                color: AppColors.text,
-                fontSize: 13,
-              ),
-            ),
           ),
         ],
       ),

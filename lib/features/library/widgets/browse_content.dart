@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../bloc/browse_children_cubit.dart';
@@ -11,6 +10,7 @@ import '../bloc/library_async_state.dart';
 import '../data/models/browse_item.dart';
 import '../data/repositories/library_repository.dart';
 import 'browse_files_screen.dart';
+import 'browse_item_tile.dart';
 
 /// Lists the children of the current breadcrumb node. Tapping a child
 /// either descends (push to nav stack) or — if the child is a leaf with
@@ -59,34 +59,7 @@ class _Children extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (_, i) {
         final item = items[i];
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => nav.push(item),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.line)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.folder_outlined,
-                  size: 22,
-                  color: AppColors.text2,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(item.name, style: AppTextStyles.itemTitle),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: AppColors.text3,
-                ),
-              ],
-            ),
-          ),
-        );
+        return BrowseItemTile(item: item, onTap: () => nav.push(item));
       },
     );
   }
