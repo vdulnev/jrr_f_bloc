@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,6 +11,7 @@ import '../data/models/tracks.dart';
 import '../data/repositories/library_repository.dart';
 import 'track_list_scaffold.dart';
 
+@RoutePage()
 class FolderTracksScreen extends StatefulWidget {
   final String folderPath;
 

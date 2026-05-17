@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -21,6 +22,7 @@ Tracks _tracksForGroup(List<DownloadedTrack> all, String albumGroupId) {
   return Tracks(tracks: filtered);
 }
 
+@RoutePage()
 class DownloadedAlbumDetailScreen extends StatelessWidget {
   final String albumGroupId;
 

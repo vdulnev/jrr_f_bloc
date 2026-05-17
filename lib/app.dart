@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/di/injection.dart';
 import 'core/orientation/orientation_lock.dart';
-import 'core/router/root_screen.dart';
+import 'core/router/app_router.dart';
+import 'core/router/navigation_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'features/connection/bloc/session_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
@@ -29,13 +30,21 @@ import 'features/zones/bloc/active_zone_cubit.dart';
 import 'features/zones/bloc/zones_cubit.dart';
 import 'features/zones/data/repositories/zone_repository.dart';
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({super.key});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  final _router = AppRouter();
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<NavigationCubit>(create: (_) => NavigationCubit()),
         BlocProvider<SessionCubit>(
           create: (_) => SessionCubit(
             repository: getIt<ConnectionRepository>(),
@@ -118,24 +127,25 @@ class App extends StatelessWidget {
           local: ctx.read<LocalPlayerCubit>(),
           activeZone: ctx.read<ActiveZoneCubit>(),
         ),
-        child: const _LifecycleScope(child: _MaterialApp()),
+        child: _LifecycleScope(child: _MaterialApp(router: _router)),
       ),
     );
   }
 }
 
 class _MaterialApp extends StatelessWidget {
-  const _MaterialApp();
+  final AppRouter router;
+  const _MaterialApp({required this.router});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'JRiver Remote',
       theme: buildAppTheme(),
       darkTheme: buildAppTheme(),
       themeMode: ThemeMode.dark,
-      home: const RootScreen(),
+      routerConfig: router.config(),
       builder: (context, child) =>
           OrientationLock(child: child ?? const SizedBox.shrink()),
     );
@@ -143,8 +153,7 @@ class _MaterialApp extends StatelessWidget {
 }
 
 /// Pauses/resumes the polling blocs (zones, MCWS player) on app lifecycle
-/// transitions per spec §5.3. The blocs themselves cancel timers in their
-/// `pause()` method; this scope just delivers the signal.
+/// transitions per spec §5.3.
 class _LifecycleScope extends StatefulWidget {
   final Widget child;
   const _LifecycleScope({required this.child});

@@ -1,21 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter/widgets.dart';
 
-import 'downloaded_album_detail_screen.dart';
-import 'downloaded_albums_screen.dart';
+import '../../../core/router/app_router.dart';
 
 void pushDownloadedAlbums(BuildContext context, String artist) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => DownloadedAlbumsScreen(artist: artist),
-    ),
-  );
+  context.router.push(DownloadedAlbumsRoute(artist: artist));
 }
 
 void pushDownloadedAlbumDetail(BuildContext context, String albumGroupId) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) =>
-          DownloadedAlbumDetailScreen(albumGroupId: albumGroupId),
-    ),
-  );
+  context.router.push(DownloadedAlbumDetailRoute(albumGroupId: albumGroupId));
 }

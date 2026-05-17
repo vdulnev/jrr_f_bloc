@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,6 +13,7 @@ import '../data/models/album_group.dart';
 import '../data/repositories/library_repository.dart';
 import 'album_list_view.dart';
 
+@RoutePage()
 class ArtistAlbumsScreen extends StatelessWidget {
   final String artist;
   const ArtistAlbumsScreen({required this.artist, super.key});
