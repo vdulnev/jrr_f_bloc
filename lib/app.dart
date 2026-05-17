@@ -7,6 +7,8 @@ import 'core/router/root_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'features/connection/bloc/session_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
+import 'features/library/bloc/library_chrome_cubit.dart';
+import 'features/library/bloc/search_by_file_key_cubit.dart';
 import 'features/library/data/repositories/library_repository.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/bloc/local_player_cubit.dart';
@@ -85,6 +87,11 @@ class App extends StatelessWidget {
             player: ctx.read<PlayerCubit>(),
             talker: getIt(),
           ),
+        ),
+        BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
+        BlocProvider<SearchByFileKeyCubit>(
+          create: (_) =>
+              SearchByFileKeyCubit(repository: getIt<LibraryRepository>()),
         ),
       ],
       child: RepositoryProvider<PlayerControllerCubit>(

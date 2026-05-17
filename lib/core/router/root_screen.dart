@@ -5,6 +5,7 @@ import '../../features/connection/bloc/session_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
 import '../../features/connection/data/models/server_info.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
+import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
 import '../../features/queue/widgets/queue_screen.dart';
@@ -53,6 +54,7 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
               children: [
                 const NowPlayingScreen(),
                 const QueueScreen(),
+                const LibraryScreen(),
                 const ZoneListScreen(),
                 _ServerInfoView(serverInfo: widget.serverInfo),
               ],
@@ -76,6 +78,10 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
           NavigationDestination(
             icon: Icon(Icons.queue_music_outlined),
             label: 'Queue',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.library_music_outlined),
+            label: 'Library',
           ),
           NavigationDestination(
             icon: Icon(Icons.speaker_group_outlined),

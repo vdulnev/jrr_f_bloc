@@ -7,6 +7,8 @@ import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
+import '../../library/bloc/search_by_file_key_cubit.dart';
+import '../../library/data/models/track.dart';
 import '../../zones/bloc/active_zone_cubit.dart';
 import '../../zones/data/models/zone.dart';
 import '../bloc/player_controller_cubit.dart';
@@ -26,7 +28,25 @@ class NowPlayingScreen extends StatelessWidget {
       builder: (context, activeZone) {
         if (activeZone == null) return const Scaffold(body: LoadingView());
 
-        return BlocBuilder<PlayerCubit, PlayerSnapshot>(
+        return BlocConsumer<PlayerCubit, PlayerSnapshot>(
+          listenWhen: (a, b) {
+            final aKey = switch (a) {
+              PlayerData(:final status) => status?.fileKey ?? -1,
+              _ => -1,
+            };
+            final bKey = switch (b) {
+              PlayerData(:final status) => status?.fileKey ?? -1,
+              _ => -1,
+            };
+            return aKey != bKey;
+          },
+          listener: (context, snap) {
+            final key = switch (snap) {
+              PlayerData(:final status) => status?.fileKey ?? -1,
+              _ => -1,
+            };
+            context.read<SearchByFileKeyCubit>().lookup(key);
+          },
           builder: (context, snap) {
             final status = switch (snap) {
               PlayerData(:final status) => status,
@@ -65,19 +85,21 @@ class _NowPlayingBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'NOW PLAYING',
-                          style: AppTextStyles.sectionLabel,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatHeader(zone.name, status),
-                          style: AppTextStyles.itemSubtitle,
-                        ),
-                      ],
+                    child: BlocBuilder<SearchByFileKeyCubit, Track?>(
+                      builder: (context, track) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'NOW PLAYING',
+                            style: AppTextStyles.sectionLabel,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatHeader(zone.name, status, track),
+                            style: AppTextStyles.itemSubtitle,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   if (status.playingNowTracks > 0)
@@ -217,14 +239,14 @@ class _NowPlayingBody extends StatelessWidget {
     );
   }
 
-  // Phase 7 will enrich the header with fileType from File/GetInfo. Until
-  // then PlayerStatus only carries bit depth + sample rate.
-  static String _formatHeader(String zoneName, PlayerStatus s) {
+  static String _formatHeader(String zoneName, PlayerStatus s, Track? track) {
+    final fileType = track?.fileType ?? '';
     if (s.bitDepth > 0 && s.sampleRate > 0) {
       final sr = s.sampleRate >= 1000
           ? '${(s.sampleRate / 1000).round()}'
           : '${s.sampleRate}';
-      return '$zoneName · ${s.bitDepth}/$sr';
+      final prefix = fileType.isNotEmpty ? '$fileType ' : '';
+      return '$zoneName · $prefix${s.bitDepth}/$sr';
     }
     return zoneName;
   }
