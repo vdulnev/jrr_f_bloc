@@ -1,0 +1,174 @@
+import 'package:drift/native.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:jrr_f_bloc/core/db/app_database.dart';
+import 'package:jrr_f_bloc/core/di/injection.dart';
+import 'package:jrr_f_bloc/core/error/app_exception.dart';
+import 'package:jrr_f_bloc/core/network/mcws_client.dart';
+import 'package:jrr_f_bloc/core/network/mcws_xml_parser.dart';
+import 'package:jrr_f_bloc/core/network/models/auth_result.dart';
+import 'package:jrr_f_bloc/features/connection/data/repositories/connection_repository_impl.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:talker/talker.dart';
+
+class MockMcwsClient extends Mock implements McwsClient {}
+
+class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
+/// Test double that injects a mock McwsClient via buildClient override.
+class _TestConnectionRepository extends ConnectionRepositoryImpl {
+  final McwsClient _mockClient;
+
+  _TestConnectionRepository({
+    required super.db,
+    required super.secureStorage,
+    required super.parser,
+    required super.talker,
+    required McwsClient mockClient,
+  }) : _mockClient = mockClient;
+
+  @override
+  McwsClient buildClient(String baseUrl, String? Function() tokenGetter) =>
+      _mockClient;
+}
+
+void main() {
+  late MockMcwsClient mockClient;
+  late ConnectionRepositoryImpl repo;
+  late AppDatabase db;
+
+  const host = 'localhost';
+  const port = 52199;
+  const username = 'testuser';
+  const password = 'testpass';
+
+  setUp(() {
+    mockClient = MockMcwsClient();
+    final mockSecureStorage = MockFlutterSecureStorage();
+    db = AppDatabase(NativeDatabase.memory());
+
+    when(
+      () => mockSecureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+
+    repo = _TestConnectionRepository(
+      db: db,
+      secureStorage: mockSecureStorage,
+      parser: McwsXmlParser(),
+      talker: Talker(),
+      mockClient: mockClient,
+    );
+  });
+
+  tearDown(() async {
+    await db.close();
+    // Clean up any remaining session scope
+    try {
+      await repo.clearSession();
+    } catch (_) {
+      // Ignore cleanup errors
+    }
+    // Reset getIt to clean state for next test
+    getIt.reset();
+  });
+
+  group('connect()', () {
+    test('success: returns Right<ServerInfo> and sets token', () async {
+      when(
+        () => mockClient.authenticate(username: username, password: password),
+      ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
+
+      when(() => mockClient.alive()).thenAnswer((_) async => right(unit));
+
+      final result = await repo.connect(
+        host: host,
+        port: port,
+        username: username,
+        password: password,
+      );
+
+      expect(result.isRight(), true);
+      result.fold((_) => fail('Expected Right'), (info) {
+        expect(info.id, startsWith('server-'));
+        expect(info.name, contains(host));
+      });
+      expect(repo.currentToken, 'token-abc');
+    });
+
+    test('auth failure: returns Left<AppException.unauthorized>', () async {
+      when(
+        () => mockClient.authenticate(username: username, password: password),
+      ).thenAnswer((_) async => left(const AppException.unauthorized()));
+
+      final result = await repo.connect(
+        host: host,
+        port: port,
+        username: username,
+        password: password,
+      );
+
+      expect(result.isLeft(), true);
+      result.fold(
+        (e) => expect(e, isA<UnauthorizedException>()),
+        (_) => fail('Expected Left'),
+      );
+      expect(repo.currentToken, isNull);
+    });
+
+    test(
+      'server unreachable: returns Left<AppException.connectionRefused>',
+      () async {
+        when(
+          () => mockClient.authenticate(username: username, password: password),
+        ).thenAnswer(
+          (_) async => left(
+            const AppException.connectionRefused(address: 'localhost:52199'),
+          ),
+        );
+
+        final result = await repo.connect(
+          host: host,
+          port: port,
+          username: username,
+          password: password,
+        );
+
+        expect(result.isLeft(), true);
+        result.fold(
+          (e) => expect(e, isA<ConnectionRefusedException>()),
+          (_) => fail('Expected Left'),
+        );
+      },
+    );
+  });
+
+  group('clearSession()', () {
+    test('sets token to null', () async {
+      when(
+        () => mockClient.authenticate(username: username, password: password),
+      ).thenAnswer((_) async => right(const AuthResult(token: 'token-abc')));
+
+      when(() => mockClient.alive()).thenAnswer((_) async => right(unit));
+
+      final result = await repo.connect(
+        host: host,
+        port: port,
+        username: username,
+        password: password,
+      );
+
+      expect(result.isRight(), true);
+      expect(repo.currentToken, isNotNull);
+      expect(getIt.isRegistered<McwsClient>(), isTrue);
+
+      await repo.clearSession();
+
+      expect(repo.currentToken, isNull);
+      expect(getIt.isRegistered<McwsClient>(), isFalse);
+    });
+  });
+}

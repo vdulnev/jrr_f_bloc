@@ -1,0 +1,68 @@
+import 'package:fpdart/fpdart.dart';
+
+import '../../../../core/di/injection.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/mcws_client.dart';
+import '../models/album.dart';
+import '../models/albums.dart';
+import '../models/browse_item.dart';
+import '../models/track.dart';
+import '../models/tracks.dart';
+import 'library_repository.dart';
+
+class LibraryRepositoryImpl implements LibraryRepository {
+  @override
+  Future<Either<AppException, List<BrowseItem>>> browseChildren(String id) =>
+      getIt<McwsClient>().browseChildren(id);
+
+  @override
+  Future<Either<AppException, Tracks>> browseFiles(String id) =>
+      getIt<McwsClient>().browseFiles(id);
+  @override
+  Future<Either<AppException, Tracks>> search(
+    String query, {
+    int startIndex = 0,
+  }) => getIt<McwsClient>().searchFiles(query, startIndex: startIndex);
+
+  @override
+  Future<Either<AppException, List<String>>> getArtists() =>
+      getIt<McwsClient>().getArtists();
+
+  @override
+  Future<Either<AppException, Albums>> getAlbumsByArtist(String artist) =>
+      getIt<McwsClient>().getAlbumsByArtist(artist);
+
+  @override
+  Future<Either<AppException, Tracks>> getAlbumTracks(Album album) =>
+      getIt<McwsClient>().getAlbumTracks(album);
+
+  @override
+  Future<Either<AppException, Tracks>> getTracksByFolder(String folderPath) =>
+      getIt<McwsClient>().getTracksByFolder(folderPath);
+
+  @override
+  Future<Either<AppException, Albums>> getRandomAlbums({int count = 10}) =>
+      getIt<McwsClient>().getRandomAlbums();
+
+  @override
+  Future<Either<AppException, Unit>> playNow(
+    String zoneId,
+    List<int> fileKeys,
+  ) => getIt<McwsClient>().playByKey(zoneId, fileKeys);
+
+  @override
+  Future<Either<AppException, Unit>> playNext(
+    String zoneId,
+    List<int> fileKeys,
+  ) => getIt<McwsClient>().playByKey(zoneId, fileKeys, location: -1);
+
+  @override
+  Future<Either<AppException, Unit>> addToQueue(
+    String zoneId,
+    List<int> fileKeys,
+  ) => getIt<McwsClient>().addToQueue(zoneId, fileKeys, location: 0);
+
+  @override
+  Future<Either<AppException, Track?>> searchByFileKey(int fileKey) =>
+      getIt<McwsClient>().searchByFileKey(fileKey);
+}

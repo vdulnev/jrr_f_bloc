@@ -8,13 +8,30 @@ import 'package:talker/talker.dart';
 import '../db/app_database.dart';
 import '../logging/file_log_observer.dart';
 import '../network/mcws_xml_parser.dart';
+import '../../features/connection/data/repositories/connection_repository.dart';
+import '../../features/connection/data/repositories/connection_repository_impl.dart';
+import '../../features/favorites/data/repositories/favorites_repository.dart';
+import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
+import '../../features/library/data/repositories/library_repository.dart';
+import '../../features/library/data/repositories/library_repository_impl.dart';
+import '../../features/offline/data/repositories/downloads_repository.dart';
+import '../../features/offline/data/repositories/downloads_repository_impl.dart';
+import '../../features/offline/services/download_service.dart';
+import '../../features/player/data/repositories/player_repository.dart';
+import '../../features/player/data/repositories/player_repository_impl.dart';
+import '../../features/player/data/repositories/recently_played_repository.dart';
+import '../../features/queue/data/repositories/local_queue_repository.dart';
+import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
+import '../../features/queue/data/repositories/queue_repository.dart';
+import '../../features/queue/data/repositories/queue_repository_impl.dart';
+import '../../features/zones/data/repositories/zone_repository.dart';
+import '../../features/zones/data/repositories/zone_repository_impl.dart';
 
 final getIt = GetIt.instance;
 
-/// Phase 1 DI: long-lived singletons that are not tied to a session or
-/// feature. Repositories and bloc factories are registered in later phases
-/// as their features come online.
 Future<void> configureDependencies() async {
+  // Talker — single instance, shared by all loggers. The FileLogObserver
+  // mirrors every log line to the on-disk session log.
   getIt.registerSingleton<Talker>(
     Talker(
       logger: TalkerLogger(
@@ -24,11 +41,55 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  // Persistent storage
   getIt.registerSingleton<AppDatabase>(AppDatabase());
   getIt.registerSingleton<FlutterSecureStorage>(const FlutterSecureStorage());
 
   final prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
 
+  // MCWS XML parser — stateless, safe as singleton.
   getIt.registerSingleton<McwsXmlParser>(McwsXmlParser());
+
+  // Connection repository — manages active session and server persistence.
+  getIt.registerSingleton<ConnectionRepository>(
+    ConnectionRepositoryImpl(
+      db: getIt<AppDatabase>(),
+      secureStorage: getIt<FlutterSecureStorage>(),
+      parser: getIt<McwsXmlParser>(),
+      talker: getIt<Talker>(),
+    ),
+  );
+
+  // Player, zone, queue, library repositories — resolve McwsClient at
+  // call-time via the session scope that ConnectionRepository pushes.
+  getIt.registerSingleton<PlayerRepository>(PlayerRepositoryImpl());
+  getIt.registerSingleton<ZoneRepository>(ZoneRepositoryImpl());
+  getIt.registerSingleton<QueueRepository>(QueueRepositoryImpl());
+  getIt.registerSingleton<LocalQueueRepository>(
+    LocalQueueRepositoryImpl(getIt<AppDatabase>()),
+  );
+  getIt.registerSingleton<LibraryRepository>(LibraryRepositoryImpl());
+
+  // Offline / Downloads
+  getIt.registerSingleton<DownloadsRepository>(
+    DownloadsRepositoryImpl(db: getIt<AppDatabase>(), talker: getIt<Talker>()),
+  );
+  final downloadService = DownloadService(
+    repository: getIt<DownloadsRepository>(),
+    connectionRepository: getIt<ConnectionRepository>(),
+    talker: getIt<Talker>(),
+  );
+  downloadService.start();
+  getIt.registerSingleton<DownloadService>(downloadService);
+
+  // Recently-played history backs the Android Auto "Recent" browse category
+  // and (later) phone-side UI. Stored in SharedPreferences as a capped list
+  // of file keys.
+  getIt.registerSingleton<RecentlyPlayedRepository>(
+    RecentlyPlayedRepository(prefs),
+  );
+
+  // Favorites repository — manages favorite items from the browse screen.
+  getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
 }
