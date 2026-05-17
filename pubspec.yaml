@@ -1,5 +1,5 @@
 name: jrr_f_bloc
-description: "A new Flutter project."
+description: JRiver Remote — control JRiver Media Center via MCWS (bloc edition).
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -10,10 +10,85 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # State management
+  flutter_bloc: ^9.1.0
+  bloc: ^9.0.0
+  bloc_concurrency: ^0.3.0
+  hydrated_bloc: ^10.0.0
+
+  # Routing
+  auto_route: ^11.1.0
+
+  # DI
+  get_it: ^9.2.1
+
+  # Functional
+  fpdart: ^1.2.0
+
+  # Logging
+  talker: ^5.1.16
+  talker_flutter: ^5.1.16
+  talker_dio_logger: ^5.1.16
+  talker_bloc_logger: ^5.1.16
+
+  # Models / unions
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.11.0
+
+  # HTTP
+  dio: ^5.9.2
+  retrofit: ^4.4.1
+
+  # Local DB
+  drift: ^2.31.0
+  drift_flutter: ^0.2.8
+
+  # Prefs / secure storage
+  shared_preferences: ^2.5.5
+  flutter_secure_storage: ^10.0.0
+  just_audio: ^0.10.5
+  audio_session: ^0.2.3
+  audio_service: ^0.18.18
+  path_provider: ^2.1.5
+  crypto: ^3.0.7
+  connectivity_plus: ^7.1.1
+  share_plus: ^13.1.0
+  file_selector: ^1.1.0
+  rxdart: ^0.28.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^6.0.0
+  mocktail: ^1.0.5
+  bloc_test: ^10.0.0
+
+  # Code generation
+  build_runner: ^2.13.1
+  auto_route_generator: ^10.4.0
+  freezed: ^3.2.5
+  json_serializable: ^6.12.0
+  retrofit_generator: ^10.2.5
+  drift_dev: ^2.31.0
+  flutter_launcher_icons: ^0.14.4
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  windows:
+    generate: true
+    image_path: "assets/icon.png"
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
+  linux:
+    generate: true
+    image_path: "assets/icon.png"
+  image_path: "assets/icon.png"
 
 flutter:
   uses-material-design: true
