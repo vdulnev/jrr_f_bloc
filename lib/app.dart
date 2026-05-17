@@ -15,6 +15,9 @@ import 'features/player/bloc/player_controller_cubit.dart';
 import 'features/player/bloc/player_cubit.dart';
 import 'features/player/data/repositories/player_repository.dart';
 import 'features/player/services/local_player_service.dart';
+import 'features/queue/bloc/queue_cubit.dart';
+import 'features/queue/data/repositories/local_queue_repository.dart';
+import 'features/queue/data/repositories/queue_repository.dart';
 import 'features/zones/bloc/active_zone_cubit.dart';
 import 'features/zones/bloc/zones_cubit.dart';
 import 'features/zones/data/repositories/zone_repository.dart';
@@ -61,6 +64,8 @@ class App extends StatelessWidget {
           create: (ctx) => LocalPlayerCubit(
             service: getIt<LocalPlayerService>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
+            queueRepository: getIt<LocalQueueRepository>(),
+            prefs: getIt(),
             talker: getIt(),
           ),
         ),
@@ -69,6 +74,16 @@ class App extends StatelessWidget {
             mcws: ctx.read<McwsPlayerBloc>(),
             local: ctx.read<LocalPlayerCubit>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
+          ),
+        ),
+        BlocProvider<QueueCubit>(
+          create: (ctx) => QueueCubit(
+            repository: getIt<QueueRepository>(),
+            service: getIt<LocalPlayerService>(),
+            localPlayer: ctx.read<LocalPlayerCubit>(),
+            activeZone: ctx.read<ActiveZoneCubit>(),
+            player: ctx.read<PlayerCubit>(),
+            talker: getIt(),
           ),
         ),
       ],

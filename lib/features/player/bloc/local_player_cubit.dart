@@ -4,8 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:talker/talker.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
+import '../../queue/data/repositories/local_queue_repository.dart';
 import '../../zones/bloc/active_zone_cubit.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/playback_state.dart';
@@ -16,19 +19,30 @@ import '../services/local_player_service.dart';
 import 'player_controller.dart';
 import 'player_state.dart';
 
+String _zoneKey(Zone zone) {
+  if (zone.isOffline) return 'offline';
+  if (zone.isAndroidAuto) return 'android-auto';
+  return 'local';
+}
+
+String _kIndexPref(String zoneKey) => 'local_player_${zoneKey}_index';
+String _kPosMsPref(String zoneKey) => 'local_player_${zoneKey}_position_ms';
+const _kVolumePref = 'local_player_volume';
+
 /// Owns local (just_audio) playback. Emits a [PlayerSnapshot] view derived
 /// from the service's position / state / sequence / volume / duration
-/// streams.
+/// streams. Persists the per-zone queue, current index, and position so
+/// playback resumes after relaunch.
 ///
-/// Phase 6 wires queue persistence (so the local queue survives restarts);
 /// Phase 8 wires the downloads-set listener (so newly downloaded tracks
 /// swap streaming URLs to local file paths). Phase 10 wires the Android
-/// Auto sub-handler swap. Until then, transports work but the queue is
-/// in-memory only.
+/// Auto sub-handler swap.
 class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     implements PlayerController {
   final LocalPlayerService _service;
   final ActiveZoneCubit _activeZone;
+  final LocalQueueRepository _queueRepo;
+  final SharedPreferences _prefs;
   final Talker _talker;
 
   StreamSubscription<Duration>? _positionSub;
@@ -37,19 +51,29 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   StreamSubscription<double>? _volumeSub;
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<Zone?>? _zoneSub;
+  StreamSubscription<SequenceState?>? _persistSub;
+  StreamSubscription<Duration>? _persistPositionSub;
+  StreamSubscription<double>? _persistVolumeSub;
 
   Duration _position = Duration.zero;
   Duration? _duration = Duration.zero;
   double _volume = 1.0;
   PlayerState _playerState = PlayerState(false, ProcessingState.idle);
   SequenceState? _sequenceState;
+  String _currentZoneKey = '';
+  int? _lastSavedIndex;
+  List<int>? _lastSavedKeys;
 
   LocalPlayerCubit({
     required LocalPlayerService service,
     required ActiveZoneCubit activeZone,
+    required LocalQueueRepository queueRepository,
+    required SharedPreferences prefs,
     required Talker talker,
   }) : _service = service,
        _activeZone = activeZone,
+       _queueRepo = queueRepository,
+       _prefs = prefs,
        _talker = talker,
        super(const PlayerSnapshot.data(status: null)) {
     _positionSub = _service.positionStream.listen(
@@ -92,8 +116,93 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
       onError: (Object e, StackTrace st) =>
           _talker.error('[LocalPlayerCubit] durationStream', e, st),
     );
-    _zoneSub = _activeZone.stream.listen((_) => _recompute());
+    _zoneSub = _activeZone.stream.listen(_onZoneChanged);
+
+    // Persist sequence + scalar state. setTracks() replays the same sequence
+    // on first load, so guard against echoing it back to storage.
+    _persistSub = _service.sequenceStateStream.listen((seq) async {
+      if (_currentZoneKey.isEmpty) return;
+      final keys = seq?.sequence
+              .map((s) => s.tag)
+              .whereType<Track>()
+              .map((t) => t.fileKey)
+              .toList() ??
+          const <int>[];
+      final index = seq?.currentIndex ?? -1;
+      if (_listEquals(keys, _lastSavedKeys) && _lastSavedIndex == index) {
+        return;
+      }
+      _lastSavedKeys = List.of(keys);
+      _lastSavedIndex = index;
+      final tracks = Tracks(
+        tracks: seq?.sequence
+                .map((s) => s.tag)
+                .whereType<Track>()
+                .toList() ??
+            const <Track>[],
+      );
+      await _queueRepo.setTracks(_currentZoneKey, tracks);
+      if (index >= 0) {
+        await _prefs.setInt(_kIndexPref(_currentZoneKey), index);
+      }
+    });
+    _persistPositionSub = _service.positionStream.listen((pos) {
+      if (_currentZoneKey.isEmpty) return;
+      _prefs.setInt(_kPosMsPref(_currentZoneKey), pos.inMilliseconds);
+    });
+    _persistVolumeSub = _service.volumeStream.listen((vol) {
+      _prefs.setDouble(_kVolumePref, vol);
+    });
+
+    _onZoneChanged(_activeZone.state);
     _recompute();
+  }
+
+  Future<void> _onZoneChanged(Zone? zone) async {
+    if (zone == null ||
+        (!zone.isLocal && !zone.isOffline && !zone.isAndroidAuto)) {
+      _recompute();
+      return;
+    }
+    final key = _zoneKey(zone);
+    if (key == _currentZoneKey) {
+      _recompute();
+      return;
+    }
+    _currentZoneKey = key;
+    _lastSavedKeys = null;
+    _lastSavedIndex = null;
+    await _loadQueue(key);
+    _recompute();
+  }
+
+  Future<void> _loadQueue(String zoneKey) async {
+    _talker.info('[LocalPlayerCubit] Loading persisted queue for $zoneKey');
+    final tracksResult = await _queueRepo.getTracks(zoneKey);
+    final tracks = tracksResult.match((_) => Tracks.empty, (t) => t);
+    await _service.stop();
+    await _service.setTracks(tracks);
+    _lastSavedKeys = tracks.tracks.map((t) => t.fileKey).toList();
+
+    final savedIndex = _prefs.getInt(_kIndexPref(zoneKey)) ?? -1;
+    final savedPosMs = _prefs.getInt(_kPosMsPref(zoneKey)) ?? 0;
+    if (tracks.isNotEmpty && savedIndex >= 0 && savedIndex < tracks.length) {
+      _lastSavedIndex = savedIndex;
+      await _service.seekTo(savedPosMs, index: savedIndex);
+    }
+
+    final savedVolume = _prefs.getDouble(_kVolumePref);
+    if (savedVolume != null) await _service.setVolume(savedVolume);
+  }
+
+  static bool _listEquals(List<int>? a, List<int>? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   void _recompute() {
@@ -246,6 +355,9 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     await _volumeSub?.cancel();
     await _durationSub?.cancel();
     await _zoneSub?.cancel();
+    await _persistSub?.cancel();
+    await _persistPositionSub?.cancel();
+    await _persistVolumeSub?.cancel();
     return super.close();
   }
 }

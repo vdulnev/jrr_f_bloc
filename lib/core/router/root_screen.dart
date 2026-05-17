@@ -7,6 +7,7 @@ import '../../features/connection/data/models/server_info.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
+import '../../features/queue/widgets/queue_screen.dart';
 import '../../features/zones/widgets/zone_list_screen.dart';
 import '../../shared/widgets/loading_view.dart';
 import '../theme/app_theme.dart';
@@ -51,6 +52,7 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
               index: _tab,
               children: [
                 const NowPlayingScreen(),
+                const QueueScreen(),
                 const ZoneListScreen(),
                 _ServerInfoView(serverInfo: widget.serverInfo),
               ],
@@ -70,6 +72,10 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
           NavigationDestination(
             icon: Icon(Icons.album_outlined),
             label: 'Playing',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.queue_music_outlined),
+            label: 'Queue',
           ),
           NavigationDestination(
             icon: Icon(Icons.speaker_group_outlined),
