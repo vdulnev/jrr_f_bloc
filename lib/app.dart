@@ -55,7 +55,12 @@ class _AppState extends State<App> {
         BlocProvider<ActiveZoneCubit>(
           create: (_) => ActiveZoneCubit(prefs: getIt(), talker: getIt()),
         ),
+        // ZonesCubit polls the server and drives ActiveZoneCubit.
+        // Lazy creation would leave the active zone null until the user
+        // visits the Zones tab — and the Now Playing screen waits on
+        // that to leave its loader.
         BlocProvider<ZonesCubit>(
+          lazy: false,
           create: (ctx) => ZonesCubit(
             repository: getIt<ZoneRepository>(),
             session: ctx.read<SessionCubit>(),
@@ -66,7 +71,10 @@ class _AppState extends State<App> {
         BlocProvider<LocalAudioQualityCubit>(
           create: (_) => LocalAudioQualityCubit(prefs: getIt()),
         ),
+        // McwsPlayerBloc owns the Playback/Info polling timer; must run
+        // independently of whether a UI consumer exists.
         BlocProvider<McwsPlayerBloc>(
+          lazy: false,
           create: (ctx) => McwsPlayerBloc(
             repository: getIt<PlayerRepository>(),
             library: getIt<LibraryRepository>(),
@@ -75,7 +83,10 @@ class _AppState extends State<App> {
             talker: getIt(),
           ),
         ),
+        // LocalPlayerCubit owns just_audio stream subscriptions and the
+        // per-zone queue restore on launch.
         BlocProvider<LocalPlayerCubit>(
+          lazy: false,
           create: (ctx) => LocalPlayerCubit(
             service: getIt<LocalPlayerService>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
@@ -85,14 +96,19 @@ class _AppState extends State<App> {
             talker: getIt(),
           ),
         ),
+        // PlayerCubit forwards snapshots from MCWS / Local based on zone.
         BlocProvider<PlayerCubit>(
+          lazy: false,
           create: (ctx) => PlayerCubit(
             mcws: ctx.read<McwsPlayerBloc>(),
             local: ctx.read<LocalPlayerCubit>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
           ),
         ),
+        // QueueCubit watches the playing-now change counter; eager so
+        // the queue is current the moment the user opens the tab.
         BlocProvider<QueueCubit>(
+          lazy: false,
           create: (ctx) => QueueCubit(
             repository: getIt<QueueRepository>(),
             service: getIt<LocalPlayerService>(),
@@ -107,15 +123,21 @@ class _AppState extends State<App> {
           create: (_) =>
               SearchByFileKeyCubit(repository: getIt<LibraryRepository>()),
         ),
+        // Favorites + downloads cubits expose stream-backed state used by
+        // tile chrome across the library — eager so tiles never render
+        // with stale "not downloaded" badges before the first emission.
         BlocProvider<FavoritesCubit>(
+          lazy: false,
           create: (_) =>
               FavoritesCubit(repository: getIt<FavoritesRepository>()),
         ),
         BlocProvider<DownloadJobsCubit>(
+          lazy: false,
           create: (_) =>
               DownloadJobsCubit(repository: getIt<DownloadsRepository>()),
         ),
         BlocProvider<DownloadedTracksCubit>(
+          lazy: false,
           create: (_) =>
               DownloadedTracksCubit(repository: getIt<DownloadsRepository>()),
         ),
