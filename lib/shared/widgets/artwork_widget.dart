@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/di/injection.dart';
-import '../../features/connection/bloc/session_cubit.dart';
-import '../../features/connection/bloc/session_state.dart';
-import '../../features/connection/data/repositories/connection_repository.dart';
+import '../../features/connection/bloc/artwork_cubit.dart';
+import '../../features/connection/bloc/artwork_state.dart';
 
 class ArtworkWidget extends StatelessWidget {
   final int? fileKey;
@@ -17,19 +15,14 @@ class ArtworkWidget extends StatelessWidget {
     final key = fileKey;
     if (key == null || key < 0) return _placeholder(context);
 
-    return BlocBuilder<SessionCubit, SessionState>(
-      buildWhen: (a, b) => a.runtimeType != b.runtimeType,
-      builder: (context, session) {
-        if (session is! Authenticated) return _placeholder(context);
-        final token = getIt<ConnectionRepository>().currentToken;
-        final tokenParam = token != null ? '&Token=$token' : '';
-        final fullUrl =
-            '${session.serverInfo.address}/MCWS/v1/File/GetImage?File=$key$tokenParam';
-
+    return BlocBuilder<ArtworkCubit, ArtworkState>(
+      builder: (context, state) {
+        final url = state.urlFor(key);
+        if (url == null) return _placeholder(context);
         return ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
-            fullUrl,
+            url,
             width: size,
             height: size,
             fit: BoxFit.cover,

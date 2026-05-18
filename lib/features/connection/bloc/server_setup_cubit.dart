@@ -2,20 +2,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/app_exception.dart';
 import '../data/repositories/connection_repository.dart';
+import '../session_service.dart';
 import 'server_setup_state.dart';
-import 'session_cubit.dart';
 
 /// Drives the submit button on [ServerSetupScreen]: resolves an access key
-/// (when applicable), then delegates the actual connect to [SessionCubit].
+/// (when applicable), then delegates the actual connect to [SessionService].
 /// Owns only the per-screen form submission state — credentials live in
 /// `TextEditingController`s on the screen itself.
 class ServerSetupCubit extends Cubit<ServerSetupState> {
   final ConnectionRepository _repo;
-  final SessionCubit _session;
+  final SessionService _session;
 
   ServerSetupCubit({
     required ConnectionRepository repository,
-    required SessionCubit session,
+    required SessionService session,
   }) : _repo = repository,
        _session = session,
        super(const ServerSetupState.idle());
@@ -66,6 +66,11 @@ class ServerSetupCubit extends Cubit<ServerSetupState> {
       useSsl: useSsl,
       sslPort: sslPort,
     );
+  }
+
+  /// Opt into Offline Mode without contacting any server.
+  Future<void> continueOffline() async {
+    await _session.enterOfflineMode();
   }
 
   Future<void> _connect({

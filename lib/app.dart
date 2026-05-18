@@ -6,8 +6,10 @@ import 'core/orientation/orientation_lock.dart';
 import 'core/router/app_router.dart';
 import 'core/router/navigation_cubit.dart';
 import 'core/theme/app_theme.dart';
-import 'features/connection/bloc/session_cubit.dart';
+import 'features/connection/bloc/artwork_cubit.dart';
+import 'features/connection/bloc/root_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
+import 'features/connection/session_service.dart';
 import 'features/favorites/bloc/favorites_cubit.dart';
 import 'features/favorites/data/repositories/favorites_repository.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
@@ -45,11 +47,19 @@ class _AppState extends State<App> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<NavigationCubit>(create: (_) => NavigationCubit()),
-        BlocProvider<SessionCubit>(
-          create: (_) => SessionCubit(
+        // RootScreen's companion — observes SessionService and emits
+        // SessionState so the root router never touches the service
+        // directly.
+        BlocProvider<RootCubit>(
+          lazy: false,
+          create: (_) => RootCubit(session: getIt<SessionService>()),
+        ),
+        // Connection snapshot used by ArtworkWidget to compose image URLs.
+        BlocProvider<ArtworkCubit>(
+          lazy: false,
+          create: (_) => ArtworkCubit(
+            session: getIt<SessionService>(),
             repository: getIt<ConnectionRepository>(),
-            prefs: getIt(),
-            talker: getIt(),
           ),
         ),
         BlocProvider<ActiveZoneCubit>(
@@ -63,7 +73,7 @@ class _AppState extends State<App> {
           lazy: false,
           create: (ctx) => ZonesCubit(
             repository: getIt<ZoneRepository>(),
-            session: ctx.read<SessionCubit>(),
+            session: getIt<SessionService>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
             talker: getIt(),
           ),
@@ -78,7 +88,7 @@ class _AppState extends State<App> {
           create: (ctx) => McwsPlayerBloc(
             repository: getIt<PlayerRepository>(),
             library: getIt<LibraryRepository>(),
-            session: ctx.read<SessionCubit>(),
+            session: getIt<SessionService>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
             talker: getIt(),
           ),

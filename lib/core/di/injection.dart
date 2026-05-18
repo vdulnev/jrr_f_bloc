@@ -10,6 +10,7 @@ import '../logging/file_log_observer.dart';
 import '../network/mcws_xml_parser.dart';
 import '../../features/connection/data/repositories/connection_repository.dart';
 import '../../features/connection/data/repositories/connection_repository_impl.dart';
+import '../../features/connection/session_service.dart';
 import '../../features/favorites/data/repositories/favorites_repository.dart';
 import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/library/data/repositories/library_repository.dart';
@@ -93,6 +94,17 @@ Future<void> configureDependencies() async {
 
   // Favorites repository — manages favorite items from the browse screen.
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
+
+  // Session — owns the connection lifecycle. Constructed here so its
+  // silent-reconnect attempt fires at app boot rather than waiting on a
+  // BlocProvider in the widget tree. UI/blocs read it from GetIt.
+  getIt.registerSingleton<SessionService>(
+    SessionService(
+      repository: getIt<ConnectionRepository>(),
+      prefs: prefs,
+      talker: getIt<Talker>(),
+    ),
+  );
 
   // Android Auto session detection — flipped to "connected" the first time
   // Auto calls into the audio handler's browse API and back to

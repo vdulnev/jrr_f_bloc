@@ -1,31 +1,53 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/error/app_exception.dart';
-import '../../zones/data/models/zone.dart';
-import '../../zones/data/repositories/zone_repository.dart';
-import '../data/models/server_info.dart';
-import '../data/repositories/connection_repository.dart';
-import 'session_state.dart';
+import '../../core/error/app_exception.dart';
+import '../zones/data/models/zone.dart';
+import '../zones/data/repositories/zone_repository.dart';
+import 'bloc/session_state.dart';
+import 'data/models/server_info.dart';
+import 'data/repositories/connection_repository.dart';
 
 /// Owns the connection lifecycle: silent reconnect, manual connect, logout,
-/// offline-mode opt-in. State is consumed by the root router to swap between
-/// the login screen and the authenticated shell.
-class SessionCubit extends Cubit<SessionState> {
+/// offline-mode opt-in.
+///
+/// Exposes a Cubit-shaped surface ([state] + [stream]) but isn't a Cubit —
+/// it lives in the DI container so the rest of the app can observe session
+/// state without coupling to the bloc widget tree.
+class SessionService {
   final ConnectionRepository _repo;
   final SharedPreferences _prefs;
   final Talker _talker;
 
-  SessionCubit({
+  final StreamController<SessionState> _controller =
+      StreamController<SessionState>.broadcast();
+  SessionState _state = const SessionState.restoring();
+
+  SessionService({
     required ConnectionRepository repository,
     required SharedPreferences prefs,
     required Talker talker,
   }) : _repo = repository,
        _prefs = prefs,
-       _talker = talker,
-       super(const SessionState.restoring()) {
-    _attemptSilentReconnect();
+       _talker = talker {
+    // Defer the silent reconnect off the construction stack so callers
+    // can subscribe to [stream] before the first emit lands.
+    scheduleMicrotask(_attemptSilentReconnect);
+  }
+
+  /// Current session state — synchronous snapshot.
+  SessionState get state => _state;
+
+  /// Broadcast stream of state changes. Late subscribers do not replay
+  /// the current value; pair with [state] for the initial snapshot.
+  Stream<SessionState> get stream => _controller.stream;
+
+  void _emit(SessionState next) {
+    if (_state == next) return;
+    _state = next;
+    _controller.add(next);
   }
 
   Future<void> _attemptSilentReconnect() async {
@@ -38,10 +60,10 @@ class SessionCubit extends Cubit<SessionState> {
         _talker.info(
           '[Session] No server but last zone was Offline — entering Offline Mode',
         );
-        emit(const SessionState.authenticated(serverInfo: ServerInfo.offline));
+        _emit(const SessionState.authenticated(serverInfo: ServerInfo.offline));
       } else {
         _talker.debug('[Session] No saved server with token — showing login');
-        emit(const SessionState.unauthenticated());
+        _emit(const SessionState.unauthenticated());
       }
       return;
     }
@@ -51,7 +73,7 @@ class SessionCubit extends Cubit<SessionState> {
       await _repo.restoreSession(server);
       final scheme = server.useSsl ? 'https' : 'http';
       final activePort = server.useSsl ? server.sslPort : server.port;
-      emit(
+      _emit(
         SessionState.authenticated(
           serverInfo: ServerInfo(
             id: 'offline-cached-server',
@@ -68,7 +90,7 @@ class SessionCubit extends Cubit<SessionState> {
     final password = await _repo.getPassword(server.passwordKey);
     if (password == null) {
       _talker.debug('[Session] Saved server has no password — showing login');
-      emit(const SessionState.unauthenticated());
+      _emit(const SessionState.unauthenticated());
       return;
     }
 
@@ -84,14 +106,14 @@ class SessionCubit extends Cubit<SessionState> {
     result.fold(
       (e) {
         _talker.warning('[Session] Silent reconnect failed: $e');
-        emit(const SessionState.unauthenticated());
+        _emit(const SessionState.unauthenticated());
       },
       (info) {
         _talker.info(
           '[Session] Silent reconnect succeeded: ${info.name} '
           '(${info.version} on ${info.platform})',
         );
-        emit(SessionState.authenticated(serverInfo: info));
+        _emit(SessionState.authenticated(serverInfo: info));
       },
     );
   }
@@ -99,7 +121,7 @@ class SessionCubit extends Cubit<SessionState> {
   Future<void> enterOfflineMode() async {
     _talker.info('[Session] Entering Offline Mode manually');
     await _prefs.setString(kActiveZoneGuidKey, Zone.offline.guid);
-    emit(const SessionState.authenticated(serverInfo: ServerInfo.offline));
+    _emit(const SessionState.authenticated(serverInfo: ServerInfo.offline));
   }
 
   /// Manual connect. Returns null on success, [AppException] on failure.
@@ -133,7 +155,7 @@ class SessionCubit extends Cubit<SessionState> {
           '[Session] Connected to ${info.name} '
           '(${info.version} on ${info.platform})',
         );
-        emit(SessionState.authenticated(serverInfo: info));
+        _emit(SessionState.authenticated(serverInfo: info));
         return null;
       },
     );
@@ -142,6 +164,8 @@ class SessionCubit extends Cubit<SessionState> {
   Future<void> logout() async {
     _talker.info('[Session] Logout');
     await _repo.clearSession();
-    emit(const SessionState.unauthenticated());
+    _emit(const SessionState.unauthenticated());
   }
+
+  Future<void> dispose() async => _controller.close();
 }

@@ -10,6 +10,48 @@ Reference implementation: `../jrr_f/` (Riverpod, v2.7.0).
 
 ---
 
+## 0. Architecture Rules (non-negotiable)
+
+These three rules govern every widget and every cubit/bloc. Any deviation
+is a refactor candidate.
+
+1. **One cubit/bloc per stateful widget.** Every widget that owns business
+   logic talks to exactly one cubit/bloc — never two or more. Widgets
+   that compose other widgets are fine; each of those leaves still binds
+   to its own single cubit/bloc.
+
+2. **Widgets never touch services / repositories / APIs directly.** They
+   read from and dispatch to their cubit/bloc only. `getIt<…Repository>()`,
+   `Repository.method(...)`, and direct `Service.foo()` calls are
+   disallowed from widget code. Cubits/blocs are the one place where
+   side-effect dependencies get resolved.
+
+3. **The cubit/bloc state surface is one immutable state object.** A
+   widget's bloc exposes `state` (and `stream` for subscribers) — nothing
+   else. No public getters for "convenience" fields, no public streams,
+   no public service references, no public mutable lists. All data the
+   widget needs lives on the single state class; updates flow through
+   `emit(newState)`.
+
+4. **Widget/cubit names are paired** — `SomeWidget` ↔ `SomeCubit` (or
+   `SomeBloc`). Naming the cubit after what it does (`AuthGateCubit`,
+   `SessionViewCubit`) hides the binding; naming it after its widget
+   (`RootCubit`, `ServerSetupCubit`, `ArtworkCubit`, `LibraryCubit`)
+   makes the one-to-one relationship obvious in imports and grep. Drop
+   the trailing `Screen` / `Widget` / `Panel` / `Tile` suffix and append
+   `Cubit` or `Bloc`. State classes follow the same root: `SomeState`.
+
+These rules trade some keystrokes for tight blast-radius: any UI bug
+points at exactly one cubit/bloc; any cubit/bloc test fakes one
+dependency graph; refactors to the repository layer never reach widget
+files. Cross-cutting non-widget state (e.g. `SessionService`,
+`AndroidAutoSessionService`, the AudioHandler chain) lives outside the
+bloc tree in plain services registered via GetIt and is observed via
+`stream`/`state` getters — those services are consumed by blocs, not by
+widgets directly.
+
+---
+
 ## 1. Strategy
 
 The codebase already separates **state** (Riverpod providers) from **data**

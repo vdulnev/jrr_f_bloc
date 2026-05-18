@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker/talker.dart';
 
 import '../../../core/error/app_exception.dart';
-import '../../connection/bloc/session_cubit.dart';
 import '../../connection/bloc/session_state.dart';
+import '../../connection/session_service.dart';
 import '../data/models/zone.dart';
 import '../data/repositories/zone_repository.dart';
 import 'active_zone_cubit.dart';
@@ -16,7 +16,7 @@ import 'zones_state.dart';
 /// synthetic Offline zone (no server to talk to).
 class ZonesCubit extends Cubit<ZonesState> {
   final ZoneRepository _repo;
-  final SessionCubit _session;
+  final SessionService _session;
   final ActiveZoneCubit _activeZone;
   final Talker _talker;
 
@@ -28,7 +28,7 @@ class ZonesCubit extends Cubit<ZonesState> {
 
   ZonesCubit({
     required ZoneRepository repository,
-    required SessionCubit session,
+    required SessionService session,
     required ActiveZoneCubit activeZone,
     required Talker talker,
   }) : _repo = repository,

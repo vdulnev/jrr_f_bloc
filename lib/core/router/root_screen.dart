@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../features/connection/bloc/session_cubit.dart';
+import '../../features/connection/bloc/root_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
 import '../../shared/widgets/loading_view.dart';
@@ -9,7 +9,7 @@ import '../layout/adaptive_layout.dart';
 import '../layout/two_panel_shell.dart';
 import 'narrow_shell.dart';
 
-/// Auth swap (login vs. shell) is driven by SessionCubit — the
+/// Auth swap (login vs. shell) is driven by [RootCubit] — the
 /// unauthenticated case short-circuits the whole shell. Tab state lives
 /// in NavigationCubit so it survives any rebuild and is observable from
 /// other blocs. The shell itself adapts to screen width: a bottom-bar
@@ -20,7 +20,7 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SessionCubit, SessionState>(
+    return BlocBuilder<RootCubit, SessionState>(
       builder: (context, state) => switch (state) {
         Restoring() => const Scaffold(body: LoadingView()),
         Unauthenticated() => const ServerSetupScreen(),

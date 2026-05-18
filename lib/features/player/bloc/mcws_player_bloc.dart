@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker/talker.dart';
 
-import '../../connection/bloc/session_cubit.dart';
 import '../../connection/bloc/session_state.dart';
+import '../../connection/session_service.dart';
 import '../../library/data/models/tracks.dart';
 import '../../library/data/repositories/library_repository.dart';
 import '../../zones/bloc/active_zone_cubit.dart';
@@ -26,7 +26,7 @@ import 'player_state.dart';
 class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
   final PlayerRepository _repo;
   final LibraryRepository _library;
-  final SessionCubit _session;
+  final SessionService _session;
   final ActiveZoneCubit _activeZone;
   final Talker _talker;
 
@@ -38,7 +38,7 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
   McwsPlayerBloc({
     required PlayerRepository repository,
     required LibraryRepository library,
-    required SessionCubit session,
+    required SessionService session,
     required ActiveZoneCubit activeZone,
     required Talker talker,
   }) : _repo = repository,

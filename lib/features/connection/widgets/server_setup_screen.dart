@@ -7,8 +7,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../bloc/server_setup_cubit.dart';
 import '../bloc/server_setup_state.dart';
-import '../bloc/session_cubit.dart';
 import '../data/repositories/connection_repository.dart';
+import '../session_service.dart';
 
 enum _ConnectMode { accessKey, manual }
 
@@ -19,9 +19,9 @@ class ServerSetupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (ctx) => ServerSetupCubit(
+      create: (_) => ServerSetupCubit(
         repository: getIt<ConnectionRepository>(),
-        session: ctx.read<SessionCubit>(),
+        session: getIt<SessionService>(),
       ),
       child: const _ServerSetupView(),
     );
@@ -299,8 +299,8 @@ class _ServerSetupViewState extends State<_ServerSetupView> {
                               onPressed: isLoading
                                   ? null
                                   : () => context
-                                        .read<SessionCubit>()
-                                        .enterOfflineMode(),
+                                        .read<ServerSetupCubit>()
+                                        .continueOffline(),
                               child: const Text('Continue Offline'),
                             ),
                           ],

@@ -15,8 +15,9 @@ import '../../offline/data/models/download_job.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
-import '../bloc/session_cubit.dart';
-import '../bloc/session_state.dart';
+import '../bloc/server_manager_cubit.dart';
+import '../bloc/server_manager_state.dart';
+import '../session_service.dart';
 
 class ServerManagerScreen extends StatelessWidget {
   const ServerManagerScreen({super.key});
@@ -40,56 +41,67 @@ class ServerManagerScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: BlocBuilder<SessionCubit, SessionState>(
-                builder: (context, session) => switch (session) {
-                  Authenticated(:final serverInfo) => ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    children: [
-                      _InfoSection(
-                        title: 'CONNECTED SERVER',
-                        items: [
-                          _InfoRow(label: 'Name', value: serverInfo.name),
-                          _InfoRow(label: 'Version', value: serverInfo.version),
-                          _InfoRow(
-                            label: 'Platform',
-                            value: serverInfo.platform,
+              child: BlocProvider(
+                create: (_) =>
+                    ServerManagerCubit(session: getIt<SessionService>()),
+                child: BlocBuilder<ServerManagerCubit, ServerManagerState>(
+                  builder: (context, state) {
+                    final serverInfo = state.serverInfo;
+                    if (serverInfo == null) {
+                      return const Center(child: Text('Not authenticated'));
+                    }
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      children: [
+                        _InfoSection(
+                          title: 'CONNECTED SERVER',
+                          items: [
+                            _InfoRow(label: 'Name', value: serverInfo.name),
+                            _InfoRow(
+                              label: 'Version',
+                              value: serverInfo.version,
+                            ),
+                            _InfoRow(
+                              label: 'Platform',
+                              value: serverInfo.platform,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        const _StorageSection(),
+                        const SizedBox(height: 32),
+                        const _FailedDownloadsSection(),
+                        const SizedBox(height: 32),
+                        const _DiagnosticsSection(),
+                        const SizedBox(height: 32),
+                        FilledButton.icon(
+                          onPressed: () =>
+                              context.read<ServerManagerCubit>().logout(),
+                          icon: Icon(
+                            serverInfo.id == 'offline'
+                                ? Icons.login_rounded
+                                : Icons.logout_rounded,
+                            size: 18,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-                      const _StorageSection(),
-                      const SizedBox(height: 32),
-                      const _FailedDownloadsSection(),
-                      const SizedBox(height: 32),
-                      const _DiagnosticsSection(),
-                      const SizedBox(height: 32),
-                      FilledButton.icon(
-                        onPressed: () => context.read<SessionCubit>().logout(),
-                        icon: Icon(
-                          serverInfo.id == 'offline'
-                              ? Icons.login_rounded
-                              : Icons.logout_rounded,
-                          size: 18,
+                          label: Text(
+                            serverInfo.id == 'offline'
+                                ? 'Setup Server / Login'
+                                : 'Logout',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.bg3,
+                            foregroundColor: serverInfo.id == 'offline'
+                                ? AppColors.accent
+                                : Colors.redAccent,
+                          ),
                         ),
-                        label: Text(
-                          serverInfo.id == 'offline'
-                              ? 'Setup Server / Login'
-                              : 'Logout',
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.bg3,
-                          foregroundColor: serverInfo.id == 'offline'
-                              ? AppColors.accent
-                              : Colors.redAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _ => const Center(child: Text('Not authenticated')),
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ],
