@@ -7,7 +7,7 @@ import '../../features/library/data/models/tracks.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/offline/download_jobs_service.dart';
 import '../../features/offline/downloaded_tracks_service.dart';
-import '../../features/player/bloc/player_controller_cubit.dart';
+import '../../features/player/player_command_service.dart';
 import '../../features/zones/active_zone_service.dart';
 import 'tracks_popup_menu_cubit.dart';
 
@@ -30,6 +30,7 @@ class TracksPopupMenu extends StatelessWidget {
         tracksService: getIt<DownloadedTracksService>(),
         jobs: getIt<DownloadJobsService>(),
         repo: getIt<DownloadsRepository>(),
+        commands: getIt<PlayerCommandService>(),
       ),
       child: _Body(tracks: tracks, label: label),
     );
@@ -118,10 +119,7 @@ class _Body extends StatelessWidget {
               const PopupMenuItem(
                 value: 'deleteDownload',
                 child: ListTile(
-                  leading: Icon(
-                    Icons.delete_outline,
-                    color: AppColors.error,
-                  ),
+                  leading: Icon(Icons.delete_outline, color: AppColors.error),
                   title: Text(
                     'Delete downloads',
                     style: TextStyle(color: AppColors.error),
@@ -138,15 +136,14 @@ class _Body extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String action) async {
     final cubit = context.read<TracksPopupMenuCubit>();
-    final controller = context.read<PlayerControllerCubit>();
     final messenger = ScaffoldMessenger.maybeOf(context);
     switch (action) {
       case 'play':
-        await cubit.play(controller);
+        await cubit.play();
       case 'playNext':
-        await cubit.playNext(controller);
+        await cubit.playNext();
       case 'add':
-        await cubit.add(controller);
+        await cubit.add();
         if (label != null) {
           messenger?.showSnackBar(
             SnackBar(

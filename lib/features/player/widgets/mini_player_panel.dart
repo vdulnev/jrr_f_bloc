@@ -7,9 +7,9 @@ import '../../../shared/widgets/artwork_widget.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
 import '../bloc/mini_player_cubit.dart';
-import '../bloc/player_controller_cubit.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
+import '../player_command_service.dart';
 import '../player_service.dart';
 
 class MiniPlayerPanel extends StatelessWidget {
@@ -38,7 +38,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<PlayerControllerCubit>();
+    final commands = getIt<PlayerCommandService>();
     final hasTracks = (status?.playingNowTracks ?? 0) > 0;
     final positionMs = status?.positionMs ?? 0;
     final durationMs = status?.durationMs ?? 0;
@@ -123,7 +123,7 @@ class _Body extends StatelessWidget {
                         children: [
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? controller.previous : null,
+                            onPressed: hasTracks ? commands.previous : null,
                             child: const Icon(
                               Icons.skip_previous_rounded,
                               size: 20,
@@ -131,7 +131,7 @@ class _Body extends StatelessWidget {
                           ),
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? controller.playPause : null,
+                            onPressed: hasTracks ? commands.playPause : null,
                             child: Icon(
                               isPlaying
                                   ? Icons.pause_rounded
@@ -141,7 +141,7 @@ class _Body extends StatelessWidget {
                           ),
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? controller.next : null,
+                            onPressed: hasTracks ? commands.next : null,
                             child: const Icon(
                               Icons.skip_next_rounded,
                               size: 20,
@@ -155,8 +155,8 @@ class _Body extends StatelessWidget {
                   VolumeSlider(
                     value: status?.volume ?? 1.0,
                     isMuted: status?.isMuted ?? false,
-                    onChanged: controller.setVolume,
-                    onMuteToggle: controller.toggleMute,
+                    onChanged: commands.setVolume,
+                    onMuteToggle: commands.toggleMute,
                   ),
                 ],
               ),

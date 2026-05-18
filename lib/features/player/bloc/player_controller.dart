@@ -1,8 +1,8 @@
 import '../../library/data/models/tracks.dart';
 import '../../zones/data/models/zone.dart';
 
-/// Common command surface implemented by every concrete player bloc
-/// (`LocalPlayerCubit`, `McwsPlayerBloc`). Lets [PlayerControllerCubit]
+/// Common command surface implemented by every concrete player service
+/// (`LocalPlaybackService`, `McwsPlayerService`). Lets `PlayerCommandService`
 /// dispatch by zone once and forward each command as a one-liner.
 abstract interface class PlayerController {
   Future<void> playPause();

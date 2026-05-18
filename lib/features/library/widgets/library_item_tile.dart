@@ -9,7 +9,7 @@ import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../bloc/library_item_tile_cubit.dart';
 import '../data/models/track.dart';
@@ -39,11 +39,9 @@ class LibraryItemTile extends StatelessWidget {
         tracks: getIt<DownloadedTracksService>(),
         jobs: getIt<DownloadJobsService>(),
         repo: getIt<DownloadsRepository>(),
+        commands: getIt<PlayerCommandService>(),
       ),
-      child: _Tile(
-        item: item,
-        trackNumber: trackNumber,
-      ),
+      child: _Tile(item: item, trackNumber: trackNumber),
     );
   }
 }
@@ -234,15 +232,14 @@ class _Menu extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String action) async {
     final cubit = context.read<LibraryItemTileCubit>();
-    final controller = context.read<PlayerControllerCubit>();
     final messenger = ScaffoldMessenger.maybeOf(context);
     switch (action) {
       case 'play':
-        await cubit.play(controller);
+        await cubit.play();
       case 'playNext':
-        await cubit.playNext(controller);
+        await cubit.playNext();
       case 'add':
-        await cubit.add(controller);
+        await cubit.add();
         messenger?.showSnackBar(
           const SnackBar(
             content: Text('Added to playing now'),

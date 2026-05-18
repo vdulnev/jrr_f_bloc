@@ -10,7 +10,7 @@ import '../../offline/downloaded_tracks_service.dart';
 import '../../offline/widgets/album_download_progress_indicator.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/downloaded_navigation.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../bloc/album_row_tile_cubit.dart';
 import '../data/models/album.dart';
@@ -56,6 +56,7 @@ class AlbumRowTile extends StatelessWidget {
         jobs: getIt<DownloadJobsService>(),
         library: getIt<LibraryRepository>(),
         repo: getIt<DownloadsRepository>(),
+        commands: getIt<PlayerCommandService>(),
       ),
       child: BlocBuilder<AlbumRowTileCubit, AlbumRowTileViewState>(
         builder: (context, view) {
@@ -295,15 +296,14 @@ class _Row extends StatelessWidget {
     }
 
     final cubit = context.read<AlbumRowTileCubit>();
-    final controller = context.read<PlayerControllerCubit>();
 
     switch (action) {
       case 'play':
-        await cubit.play(controller);
+        await cubit.play();
       case 'playNext':
-        await cubit.playNext(controller);
+        await cubit.playNext();
       case 'add':
-        await cubit.add(controller);
+        await cubit.add();
       case 'download':
         await cubit.download();
       case 'cancelDownload':

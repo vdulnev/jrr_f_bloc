@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../../core/di/injection.dart';
+import '../../player/player_command_service.dart';
 import '../data/models/tracks.dart';
 
 Future<void> showLibraryActionSheet(
@@ -9,25 +9,22 @@ Future<void> showLibraryActionSheet(
   required Tracks tracks,
   String? title,
 }) async {
-  final controller = context.read<PlayerControllerCubit>();
+  final commands = getIt<PlayerCommandService>();
   await showModalBottomSheet<void>(
     context: context,
-    builder: (sheetCtx) => _LibraryActionSheet(
-      title: title,
-      tracks: tracks,
-      controller: controller,
-    ),
+    builder: (sheetCtx) =>
+        _LibraryActionSheet(title: title, tracks: tracks, commands: commands),
   );
-  await controller.refresh();
+  await commands.refresh();
 }
 
 class _LibraryActionSheet extends StatelessWidget {
-  final PlayerControllerCubit controller;
+  final PlayerCommandService commands;
   final String? title;
   final Tracks tracks;
 
   const _LibraryActionSheet({
-    required this.controller,
+    required this.commands,
     this.title,
     required this.tracks,
   });
@@ -53,7 +50,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.play_circle_outline),
             title: const Text('Play now'),
             onTap: () {
-              controller.playNow(tracks);
+              commands.playNow(tracks);
               Navigator.of(context).pop();
             },
           ),
@@ -61,7 +58,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.queue_play_next),
             title: const Text('Play next'),
             onTap: () {
-              controller.playNext(tracks);
+              commands.playNext(tracks);
               Navigator.of(context).pop();
             },
           ),
@@ -69,7 +66,7 @@ class _LibraryActionSheet extends StatelessWidget {
             leading: const Icon(Icons.add_to_queue),
             title: const Text('Add to queue'),
             onTap: () {
-              controller.addToQueue(tracks);
+              commands.addToQueue(tracks);
               Navigator.of(context).pop();
             },
           ),

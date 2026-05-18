@@ -8,7 +8,7 @@ import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/album.dart';
@@ -18,15 +18,14 @@ import '../data/repositories/library_repository.dart';
 /// All the booleans / fragments [AlbumRowTile] needs to render. Hidden is
 /// `true` when offline-mode + nothing-downloaded; the tile collapses to
 /// `SizedBox.shrink()` in that case.
-typedef AlbumRowTileViewState =
-    ({
-      bool hidden,
-      bool isOffline,
-      bool showDownload,
-      bool showCancel,
-      bool showDelete,
-      bool showRetry,
-    });
+typedef AlbumRowTileViewState = ({
+  bool hidden,
+  bool isOffline,
+  bool showDownload,
+  bool showCancel,
+  bool showDelete,
+  bool showRetry,
+});
 
 class AlbumRowTileCubit extends Cubit<AlbumRowTileViewState> {
   final Album _album;
@@ -35,6 +34,7 @@ class AlbumRowTileCubit extends Cubit<AlbumRowTileViewState> {
   final DownloadJobsService _jobs;
   final LibraryRepository _library;
   final DownloadsRepository _repo;
+  final PlayerCommandService _commands;
 
   StreamSubscription<Zone?>? _zoneSub;
   StreamSubscription<List<DownloadedTrack>>? _dlSub;
@@ -47,14 +47,21 @@ class AlbumRowTileCubit extends Cubit<AlbumRowTileViewState> {
     required DownloadJobsService jobs,
     required LibraryRepository library,
     required DownloadsRepository repo,
+    required PlayerCommandService commands,
   }) : _album = album,
        _activeZone = activeZone,
        _tracks = tracks,
        _jobs = jobs,
        _library = library,
        _repo = repo,
+       _commands = commands,
        super(
-         _compute(album.albumGroupId, activeZone.state, tracks.state, jobs.state),
+         _compute(
+           album.albumGroupId,
+           activeZone.state,
+           tracks.state,
+           jobs.state,
+         ),
        ) {
     _zoneSub = _activeZone.stream.listen((_) => _recompute());
     _dlSub = _tracks.stream.listen((_) => _recompute());
@@ -104,27 +111,27 @@ class AlbumRowTileCubit extends Cubit<AlbumRowTileViewState> {
 
   // Actions
 
-  Future<void> play(PlayerControllerCubit controller) async {
+  Future<void> play() async {
     final tracks = await _resolveTracks();
     if (tracks != null) {
-      await controller.playNow(tracks);
-      await controller.refresh();
+      await _commands.playNow(tracks);
+      await _commands.refresh();
     }
   }
 
-  Future<void> playNext(PlayerControllerCubit controller) async {
+  Future<void> playNext() async {
     final tracks = await _resolveTracks();
     if (tracks != null) {
-      await controller.playNext(tracks);
-      await controller.refresh();
+      await _commands.playNext(tracks);
+      await _commands.refresh();
     }
   }
 
-  Future<void> add(PlayerControllerCubit controller) async {
+  Future<void> add() async {
     final tracks = await _resolveTracks();
     if (tracks != null) {
-      await controller.addToQueue(tracks);
-      await controller.refresh();
+      await _commands.addToQueue(tracks);
+      await _commands.refresh();
     }
   }
 
@@ -151,15 +158,16 @@ class AlbumRowTileCubit extends Cubit<AlbumRowTileViewState> {
 
   Future<Tracks?> _resolveTracks() async {
     if (state.isOffline) {
-      final filtered = _tracks.state
-          .where((t) => t.albumGroupId == _album.albumGroupId)
-          .map((t) => t.track)
-          .toList()
-        ..sort((a, b) {
-          final discCompare = a.discNumber.compareTo(b.discNumber);
-          if (discCompare != 0) return discCompare;
-          return a.trackNumber.compareTo(b.trackNumber);
-        });
+      final filtered =
+          _tracks.state
+              .where((t) => t.albumGroupId == _album.albumGroupId)
+              .map((t) => t.track)
+              .toList()
+            ..sort((a, b) {
+              final discCompare = a.discNumber.compareTo(b.discNumber);
+              if (discCompare != 0) return discCompare;
+              return a.trackNumber.compareTo(b.trackNumber);
+            });
       return Tracks(tracks: filtered);
     }
     return (await _library.getAlbumTracks(_album)).match((_) => null, (t) => t);

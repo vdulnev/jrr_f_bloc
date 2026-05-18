@@ -12,7 +12,6 @@ import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
-import 'features/player/bloc/player_controller_cubit.dart';
 import 'features/player/local_playback_service.dart';
 import 'features/player/mcws_player_service.dart';
 import 'features/player/player_service.dart';
@@ -84,14 +83,7 @@ class _AppState extends State<App> {
         ),
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
       ],
-      child: RepositoryProvider<PlayerControllerCubit>(
-        create: (ctx) => PlayerControllerCubit(
-          mcws: getIt<McwsPlayerService>(),
-          local: getIt<LocalPlaybackService>(),
-          activeZone: getIt<ActiveZoneService>(),
-        ),
-        child: _LifecycleScope(child: _MaterialApp(router: _router)),
-      ),
+      child: _LifecycleScope(child: _MaterialApp(router: _router)),
     );
   }
 }

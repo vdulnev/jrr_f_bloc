@@ -411,7 +411,7 @@ to Downloads-only when Offline. Rule 1 satisfied across the player UI.
   cubits.
 - `flutter analyze` clean. All 48 tests pass.
 
-### Phase 9 — `PlayerCommandService` (½ day)
+### Phase 9 — `PlayerCommandService` (½ day) — ✅ done
 
 **Goal.** Retire `PlayerControllerCubit`. Becomes a stateless command
 sink in the service container.
@@ -427,6 +427,24 @@ sink in the service container.
 
 **Acceptance.** Every transport button + every Play / Play next / Add
 popup still fires the right path. Analyzer + tests green.
+
+**Notes (post-implementation).**
+- `PlayerCommandService` is a stateless GetIt singleton implementing
+  `PlayerController`. Routes commands to MCWS or Local by active zone.
+- Companion cubits (`AlbumRowTileCubit`, `LibraryItemTileCubit`,
+  `TracksPopupMenuCubit`, `DownloadedArtistsCubit`) now take
+  `PlayerCommandService` via constructor and own the action methods
+  outright — widgets no longer pass a controller in.
+- Widgets without a companion cubit yet (`QueueScreen`,
+  `NowPlayingScreen` transport buttons, `MiniPlayerPanel`,
+  `LibraryActionSheet`) resolve `PlayerCommandService` via
+  `getIt` directly. These tighten further when their companion
+  cubits land (Phase 11 for queue; others stay as transport hosts).
+- `RepositoryProvider<PlayerControllerCubit>` removed from `app.dart`.
+- `bloc/player_controller_cubit.dart` deleted; the
+  `PlayerController` interface in `bloc/player_controller.dart`
+  remains as the shared command surface for the two engines.
+- `flutter analyze` clean. All 48 tests pass.
 
 ### Phase 10 — `ZonesService` (½ day)
 
@@ -487,7 +505,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 | 6     | McwsPlayerService ✅                               | 1 day    |
 | 7     | LocalPlaybackService ✅                            | 1.5 days |
 | 8     | PlayerService + companion cubits ✅                | 1 day    |
-| 9     | PlayerCommandService                               | ½ day    |
+| 9     | PlayerCommandService ✅                            | ½ day    |
 | 10    | ZonesService                                       | ½ day    |
 | 11    | QueueService + companion cubit                     | 1 day    |
 | 12    | Cleanup & verification                             | ½ day    |

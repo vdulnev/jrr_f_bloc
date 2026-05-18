@@ -2,26 +2,30 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../downloaded_tracks_service.dart';
 
-typedef DownloadedArtistsState = List<({String artist, List<DownloadedTrack> tracks})>;
+typedef DownloadedArtistsState =
+    List<({String artist, List<DownloadedTrack> tracks})>;
 
-/// Companion of [DownloadedArtistsScreen]. Aggregates downloaded tracks 
+/// Companion of [DownloadedArtistsScreen]. Aggregates downloaded tracks
 /// into a sorted list of artists. Provides action methods for bulk
 /// playback and deletion.
 class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
   final DownloadedTracksService _service;
   final DownloadsRepository _repo;
+  final PlayerCommandService _commands;
   StreamSubscription<List<DownloadedTrack>>? _sub;
 
   DownloadedArtistsCubit({
     required DownloadedTracksService service,
     required DownloadsRepository repo,
+    required PlayerCommandService commands,
   }) : _service = service,
        _repo = repo,
+       _commands = commands,
        super(_compute(service.state)) {
     _sub = _service.stream.listen((s) {
       final next = _compute(s);
@@ -39,10 +43,9 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
     final sortedArtists = groups.keys.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    return sortedArtists.map((artist) => (
-      artist: artist,
-      tracks: groups[artist]!,
-    )).toList();
+    return sortedArtists
+        .map((artist) => (artist: artist, tracks: groups[artist]!))
+        .toList();
   }
 
   static bool _stateEquals(DownloadedArtistsState a, DownloadedArtistsState b) {
@@ -58,16 +61,16 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
 
   // Actions
 
-  Future<void> play(List<DownloadedTrack> tracks, PlayerControllerCubit controller) async {
-    await controller.playNow(Tracks(tracks: _sort(tracks)));
+  Future<void> play(List<DownloadedTrack> tracks) async {
+    await _commands.playNow(Tracks(tracks: _sort(tracks)));
   }
 
-  Future<void> playNext(List<DownloadedTrack> tracks, PlayerControllerCubit controller) async {
-    await controller.playNext(Tracks(tracks: _sort(tracks)));
+  Future<void> playNext(List<DownloadedTrack> tracks) async {
+    await _commands.playNext(Tracks(tracks: _sort(tracks)));
   }
 
-  Future<void> add(List<DownloadedTrack> tracks, PlayerControllerCubit controller) async {
-    await controller.addToQueue(Tracks(tracks: _sort(tracks)));
+  Future<void> add(List<DownloadedTrack> tracks) async {
+    await _commands.addToQueue(Tracks(tracks: _sort(tracks)));
   }
 
   Future<void> delete(List<DownloadedTrack> tracks) async {
@@ -75,14 +78,13 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
   }
 
   List<Track> _sort(List<DownloadedTrack> tracks) {
-    return tracks.map((t) => t.track).toList()
-      ..sort((a, b) {
-        final albumCompare = a.album.compareTo(b.album);
-        if (albumCompare != 0) return albumCompare;
-        final discCompare = a.discNumber.compareTo(b.discNumber);
-        if (discCompare != 0) return discCompare;
-        return a.trackNumber.compareTo(b.trackNumber);
-      });
+    return tracks.map((t) => t.track).toList()..sort((a, b) {
+      final albumCompare = a.album.compareTo(b.album);
+      if (albumCompare != 0) return albumCompare;
+      final discCompare = a.discNumber.compareTo(b.discNumber);
+      if (discCompare != 0) return discCompare;
+      return a.trackNumber.compareTo(b.trackNumber);
+    });
   }
 
   @override

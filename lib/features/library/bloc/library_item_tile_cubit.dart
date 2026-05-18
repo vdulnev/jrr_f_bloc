@@ -9,7 +9,7 @@ import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/track.dart';
@@ -26,6 +26,7 @@ class LibraryItemTileCubit extends Cubit<LibraryItemTileViewState> {
   final DownloadedTracksService _tracks;
   final DownloadJobsService _jobs;
   final DownloadsRepository _repo;
+  final PlayerCommandService _commands;
 
   StreamSubscription<Zone?>? _zoneSub;
   StreamSubscription<List<DownloadedTrack>>? _dlSub;
@@ -37,11 +38,13 @@ class LibraryItemTileCubit extends Cubit<LibraryItemTileViewState> {
     required DownloadedTracksService tracks,
     required DownloadJobsService jobs,
     required DownloadsRepository repo,
+    required PlayerCommandService commands,
   }) : _track = track,
        _activeZone = activeZone,
        _tracks = tracks,
        _jobs = jobs,
        _repo = repo,
+       _commands = commands,
        super(
          _compute(track.fileKey, activeZone.state, tracks.state, jobs.state),
        ) {
@@ -76,16 +79,16 @@ class LibraryItemTileCubit extends Cubit<LibraryItemTileViewState> {
 
   // Actions
 
-  Future<void> play(PlayerControllerCubit controller) async {
-    await controller.playNow(Tracks(tracks: [_track]));
+  Future<void> play() async {
+    await _commands.playNow(Tracks(tracks: [_track]));
   }
 
-  Future<void> playNext(PlayerControllerCubit controller) async {
-    await controller.playNext(Tracks(tracks: [_track]));
+  Future<void> playNext() async {
+    await _commands.playNext(Tracks(tracks: [_track]));
   }
 
-  Future<void> add(PlayerControllerCubit controller) async {
-    await controller.addToQueue(Tracks(tracks: [_track]));
+  Future<void> add() async {
+    await _commands.addToQueue(Tracks(tracks: [_track]));
   }
 
   Future<void> download() async {

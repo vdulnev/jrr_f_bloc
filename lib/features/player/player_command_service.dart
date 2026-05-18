@@ -1,19 +1,22 @@
-import '../../library/data/models/tracks.dart';
-import '../../zones/active_zone_service.dart';
-import '../../zones/data/models/zone.dart';
-import '../local_playback_service.dart';
-import '../mcws_player_service.dart';
-import 'player_controller.dart';
+import '../library/data/models/tracks.dart';
+import '../zones/active_zone_service.dart';
+import '../zones/data/models/zone.dart';
+import 'bloc/player_controller.dart';
+import 'local_playback_service.dart';
+import 'mcws_player_service.dart';
 
-/// Routes player commands to either the local or the MCWS controller based
-/// on the currently active zone. Not a Cubit — has no state of its own —
-/// but lives in `bloc/` because call sites grab it via `context.read`.
-class PlayerControllerCubit implements PlayerController {
+/// Stateless command sink. Routes transport / queue commands to the
+/// MCWS or Local controller based on the currently active zone.
+///
+/// Registered as a GetIt singleton — companion cubits (and the few
+/// widgets without a companion yet) resolve it directly. There is no
+/// state to subscribe to; this exists purely to dispatch by zone.
+class PlayerCommandService implements PlayerController {
   final McwsPlayerService _mcws;
   final LocalPlaybackService _local;
   final ActiveZoneService _activeZone;
 
-  PlayerControllerCubit({
+  PlayerCommandService({
     required McwsPlayerService mcws,
     required LocalPlaybackService local,
     required ActiveZoneService activeZone,

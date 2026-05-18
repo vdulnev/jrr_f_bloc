@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/vu_meter.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../bloc/queue_cubit.dart';
 import '../bloc/queue_state.dart';
 
@@ -31,13 +32,12 @@ class QueueScreen extends StatelessWidget {
               onClearTap: () => _confirmClear(context),
             ),
             QueueLoaded(:final tracks, :final currentIndex) => _DataView(
-                  items: tracks,
-                  currentIndex: currentIndex,
-                  onTap: (i) =>
-                      context.read<PlayerControllerCubit>().playByIndex(i),
-                  onRemove: (i) => context.read<QueueCubit>().removeItem(i),
-                  onClearTap: () => _confirmClear(context),
-                ),
+              items: tracks,
+              currentIndex: currentIndex,
+              onTap: (i) => getIt<PlayerCommandService>().playByIndex(i),
+              onRemove: (i) => context.read<QueueCubit>().removeItem(i),
+              onClearTap: () => _confirmClear(context),
+            ),
           },
         ),
       ),

@@ -14,11 +14,11 @@ import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../bloc/now_playing_cubit.dart';
 import '../bloc/now_playing_state.dart';
-import '../bloc/player_controller_cubit.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
+import '../player_command_service.dart';
 import '../player_service.dart';
 
 class NowPlayingScreen extends StatelessWidget {
@@ -67,7 +67,7 @@ class _NowPlayingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<PlayerControllerCubit>();
+    final commands = getIt<PlayerCommandService>();
 
     return Scaffold(
       body: SafeArea(
@@ -172,7 +172,7 @@ class _NowPlayingBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _ProgressSection(status: status, controller: controller),
+                  _ProgressSection(status: status, commands: commands),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -182,12 +182,12 @@ class _NowPlayingBody extends StatelessWidget {
                         color: status.shuffleMode != ShuffleMode.off
                             ? AppColors.accent
                             : AppColors.text3,
-                        onPressed: controller.toggleShuffle,
+                        onPressed: commands.toggleShuffle,
                         child: const Icon(Icons.shuffle, size: 18),
                       ),
                       TransportButton(
                         size: 44,
-                        onPressed: controller.previous,
+                        onPressed: commands.previous,
                         child: const Icon(
                           Icons.skip_previous_rounded,
                           size: 28,
@@ -196,7 +196,7 @@ class _NowPlayingBody extends StatelessWidget {
                       TransportButton(
                         size: 60,
                         accent: true,
-                        onPressed: controller.playPause,
+                        onPressed: commands.playPause,
                         child: Icon(
                           status.state == PlaybackState.playing
                               ? Icons.pause_rounded
@@ -206,7 +206,7 @@ class _NowPlayingBody extends StatelessWidget {
                       ),
                       TransportButton(
                         size: 44,
-                        onPressed: controller.next,
+                        onPressed: commands.next,
                         child: const Icon(Icons.skip_next_rounded, size: 28),
                       ),
                       TransportButton(
@@ -214,7 +214,7 @@ class _NowPlayingBody extends StatelessWidget {
                         color: status.repeatMode != RepeatMode.off
                             ? AppColors.accent
                             : AppColors.text3,
-                        onPressed: controller.cycleRepeat,
+                        onPressed: commands.cycleRepeat,
                         child: const Icon(Icons.repeat, size: 18),
                       ),
                     ],
@@ -223,8 +223,8 @@ class _NowPlayingBody extends StatelessWidget {
                   VolumeSlider(
                     value: status.volume,
                     isMuted: status.isMuted,
-                    onChanged: controller.setVolume,
-                    onMuteToggle: controller.toggleMute,
+                    onChanged: commands.setVolume,
+                    onMuteToggle: commands.toggleMute,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -251,9 +251,9 @@ class _NowPlayingBody extends StatelessWidget {
 
 class _ProgressSection extends StatelessWidget {
   final PlayerStatus status;
-  final PlayerControllerCubit controller;
+  final PlayerCommandService commands;
 
-  const _ProgressSection({required this.status, required this.controller});
+  const _ProgressSection({required this.status, required this.commands});
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +271,7 @@ class _ProgressSection extends StatelessWidget {
           progress: progress,
           onChanged: (v) {
             final ms = (v * durationMs).round();
-            controller.seekTo(ms);
+            commands.seekTo(ms);
           },
         ),
         Padding(
@@ -304,7 +304,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<PlayerControllerCubit>();
+    final commands = getIt<PlayerCommandService>();
     return SafeArea(
       child: Column(
         children: [
@@ -351,8 +351,8 @@ class _EmptyState extends StatelessWidget {
             child: VolumeSlider(
               value: status?.volume ?? 0,
               isMuted: status?.isMuted ?? false,
-              onChanged: controller.setVolume,
-              onMuteToggle: controller.toggleMute,
+              onChanged: commands.setVolume,
+              onMuteToggle: commands.toggleMute,
             ),
           ),
         ],

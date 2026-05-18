@@ -30,6 +30,7 @@ import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/player/mcws_player_service.dart';
 import '../../features/player/local_playback_service.dart';
+import '../../features/player/player_command_service.dart';
 import '../../features/player/player_service.dart';
 import '../../features/player/services/android_auto_player_service.dart';
 import '../../features/player/services/jrr_audio_handler.dart';
@@ -152,9 +153,8 @@ Future<void> configureDependencies() async {
   final localAudioPlayer = AudioPlayer();
   final autoAudioPlayer = AudioPlayer();
 
-  LocalAudioQuality resolveQuality() => LocalAudioQuality.fromName(
-    prefs.getString('local_audio_quality'),
-  );
+  LocalAudioQuality resolveQuality() =>
+      LocalAudioQuality.fromName(prefs.getString('local_audio_quality'));
 
   final localHandler = LocalPlayerService(
     player: localAudioPlayer,
@@ -214,6 +214,16 @@ Future<void> configureDependencies() async {
   // Player facade — routes snapshots from MCWS / Local based on active zone.
   getIt.registerSingleton<PlayerService>(
     PlayerService(
+      mcws: getIt<McwsPlayerService>(),
+      local: getIt<LocalPlaybackService>(),
+      activeZone: getIt<ActiveZoneService>(),
+    ),
+  );
+
+  // Command sink — routes transport / queue commands by active zone.
+  // Stateless; companion cubits resolve it directly.
+  getIt.registerSingleton<PlayerCommandService>(
+    PlayerCommandService(
       mcws: getIt<McwsPlayerService>(),
       local: getIt<LocalPlaybackService>(),
       activeZone: getIt<ActiveZoneService>(),

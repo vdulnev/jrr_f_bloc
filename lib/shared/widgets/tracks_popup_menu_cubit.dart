@@ -10,18 +10,17 @@ import '../../features/offline/data/models/downloaded_track.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/offline/download_jobs_service.dart';
 import '../../features/offline/downloaded_tracks_service.dart';
-import '../../features/player/bloc/player_controller_cubit.dart';
+import '../../features/player/player_command_service.dart';
 import '../../features/zones/active_zone_service.dart';
 import '../../features/zones/data/models/zone.dart';
 
-typedef TracksPopupMenuViewState =
-    ({
-      bool hidden,
-      bool showDownload,
-      bool showCancel,
-      bool showDelete,
-      bool showRetry,
-    });
+typedef TracksPopupMenuViewState = ({
+  bool hidden,
+  bool showDownload,
+  bool showCancel,
+  bool showDelete,
+  bool showRetry,
+});
 
 /// Companion of [TracksPopupMenu]. Emits exactly the boolean fragments
 /// the popup needs given the menu's track set + the live download state.
@@ -35,6 +34,7 @@ class TracksPopupMenuCubit extends Cubit<TracksPopupMenuViewState> {
   final DownloadedTracksService _tracks;
   final DownloadJobsService _jobs;
   final DownloadsRepository _repo;
+  final PlayerCommandService _commands;
 
   StreamSubscription<Zone?>? _zoneSub;
   StreamSubscription<List<DownloadedTrack>>? _dlSub;
@@ -46,6 +46,7 @@ class TracksPopupMenuCubit extends Cubit<TracksPopupMenuViewState> {
     required DownloadedTracksService tracksService,
     required DownloadJobsService jobs,
     required DownloadsRepository repo,
+    required PlayerCommandService commands,
   }) : _tracksList = tracks.toList(),
        _trackKeys = tracks.map((t) => t.fileKey).toSet(),
        _totalTracks = tracks.length,
@@ -53,6 +54,7 @@ class TracksPopupMenuCubit extends Cubit<TracksPopupMenuViewState> {
        _tracks = tracksService,
        _jobs = jobs,
        _repo = repo,
+       _commands = commands,
        super(
          _compute(
            tracks.map((t) => t.fileKey).toSet(),
@@ -99,8 +101,9 @@ class TracksPopupMenuCubit extends Cubit<TracksPopupMenuViewState> {
         showRetry: false,
       );
     }
-    final jobsForTracks =
-        jobs.where((j) => trackKeys.contains(j.fileKey)).toList();
+    final jobsForTracks = jobs
+        .where((j) => trackKeys.contains(j.fileKey))
+        .toList();
     final activeJobs = jobsForTracks.where(
       (j) =>
           j.state == DownloadState.queued || j.state == DownloadState.running,
@@ -120,19 +123,19 @@ class TracksPopupMenuCubit extends Cubit<TracksPopupMenuViewState> {
 
   // Actions
 
-  Future<void> play(PlayerControllerCubit controller) async {
-    await controller.playNow(Tracks(tracks: _tracksList));
-    await controller.refresh();
+  Future<void> play() async {
+    await _commands.playNow(Tracks(tracks: _tracksList));
+    await _commands.refresh();
   }
 
-  Future<void> playNext(PlayerControllerCubit controller) async {
-    await controller.playNext(Tracks(tracks: _tracksList));
-    await controller.refresh();
+  Future<void> playNext() async {
+    await _commands.playNext(Tracks(tracks: _tracksList));
+    await _commands.refresh();
   }
 
-  Future<void> add(PlayerControllerCubit controller) async {
-    await controller.addToQueue(Tracks(tracks: _tracksList));
-    await controller.refresh();
+  Future<void> add() async {
+    await _commands.addToQueue(Tracks(tracks: _tracksList));
+    await _commands.refresh();
   }
 
   Future<void> download() async {

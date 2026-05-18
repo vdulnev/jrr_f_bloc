@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../player/bloc/player_controller_cubit.dart';
+import '../../player/player_command_service.dart';
 import '../bloc/downloaded_artists_cubit.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
@@ -20,6 +20,7 @@ class DownloadedArtistsScreen extends StatelessWidget {
       create: (_) => DownloadedArtistsCubit(
         service: getIt<DownloadedTracksService>(),
         repo: getIt<DownloadsRepository>(),
+        commands: getIt<PlayerCommandService>(),
       ),
       child: BlocBuilder<DownloadedArtistsCubit, DownloadedArtistsState>(
         builder: (context, state) {
@@ -134,14 +135,13 @@ class _ArtistRow extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String action) async {
     final cubit = context.read<DownloadedArtistsCubit>();
-    final controller = context.read<PlayerControllerCubit>();
     switch (action) {
       case 'play':
-        await cubit.play(tracks, controller);
+        await cubit.play(tracks);
       case 'playNext':
-        await cubit.playNext(tracks, controller);
+        await cubit.playNext(tracks);
       case 'add':
-        await cubit.add(tracks, controller);
+        await cubit.add(tracks);
       case 'deleteDownload':
         if (!context.mounted) return;
         final confirmed = await showConfirmDeleteDialog(
