@@ -11,14 +11,12 @@ import 'features/connection/bloc/root_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
-import 'features/library/data/repositories/library_repository.dart';
 import 'features/offline/data/repositories/downloads_repository.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/bloc/local_player_cubit.dart';
-import 'features/player/bloc/mcws_player_bloc.dart';
 import 'features/player/bloc/player_controller_cubit.dart';
 import 'features/player/bloc/player_cubit.dart';
-import 'features/player/data/repositories/player_repository.dart';
+import 'features/player/mcws_player_service.dart';
 import 'features/player/services/local_player_service.dart';
 import 'features/queue/bloc/queue_cubit.dart';
 import 'features/queue/data/repositories/local_queue_repository.dart';
@@ -73,18 +71,6 @@ class _AppState extends State<App> {
         BlocProvider<LocalAudioQualityCubit>(
           create: (_) => LocalAudioQualityCubit(prefs: getIt()),
         ),
-        // McwsPlayerBloc owns the Playback/Info polling timer; must run
-        // independently of whether a UI consumer exists.
-        BlocProvider<McwsPlayerBloc>(
-          lazy: false,
-          create: (ctx) => McwsPlayerBloc(
-            repository: getIt<PlayerRepository>(),
-            library: getIt<LibraryRepository>(),
-            session: getIt<SessionService>(),
-            activeZone: getIt<ActiveZoneService>(),
-            talker: getIt(),
-          ),
-        ),
         // LocalPlayerCubit owns just_audio stream subscriptions and the
         // per-zone queue restore on launch.
         BlocProvider<LocalPlayerCubit>(
@@ -102,7 +88,7 @@ class _AppState extends State<App> {
         BlocProvider<PlayerCubit>(
           lazy: false,
           create: (ctx) => PlayerCubit(
-            mcws: ctx.read<McwsPlayerBloc>(),
+            mcws: getIt<McwsPlayerService>(),
             local: ctx.read<LocalPlayerCubit>(),
             activeZone: getIt<ActiveZoneService>(),
           ),
@@ -124,7 +110,7 @@ class _AppState extends State<App> {
       ],
       child: RepositoryProvider<PlayerControllerCubit>(
         create: (ctx) => PlayerControllerCubit(
-          mcws: ctx.read<McwsPlayerBloc>(),
+          mcws: getIt<McwsPlayerService>(),
           local: ctx.read<LocalPlayerCubit>(),
           activeZone: getIt<ActiveZoneService>(),
         ),
@@ -172,11 +158,11 @@ class _LifecycleScopeState extends State<_LifecycleScope> {
     _listener = AppLifecycleListener(
       onPause: () {
         context.read<ZonesCubit>().pause();
-        context.read<McwsPlayerBloc>().pause();
+        getIt<McwsPlayerService>().pause();
       },
       onResume: () {
         context.read<ZonesCubit>().resume();
-        context.read<McwsPlayerBloc>().resume();
+        getIt<McwsPlayerService>().resume();
       },
     );
   }

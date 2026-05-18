@@ -1,41 +1,45 @@
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker/talker.dart';
 
-import '../../connection/bloc/session_state.dart';
-import '../../connection/session_service.dart';
-import '../../library/data/models/tracks.dart';
-import '../../library/data/repositories/library_repository.dart';
-import '../../zones/active_zone_service.dart';
-import '../../zones/data/models/zone.dart';
-import '../data/models/playback_state.dart';
-import '../data/models/repeat_mode.dart';
-import '../data/models/shuffle_mode.dart';
-import '../data/repositories/player_repository.dart';
-import 'player_controller.dart';
-import 'player_state.dart';
+import '../connection/bloc/session_state.dart';
+import '../connection/session_service.dart';
+import '../library/data/models/tracks.dart';
+import '../library/data/repositories/library_repository.dart';
+import '../zones/active_zone_service.dart';
+import '../zones/data/models/zone.dart';
+import 'bloc/player_controller.dart';
+import 'bloc/player_state.dart';
+import 'data/models/playback_state.dart';
+import 'data/models/repeat_mode.dart';
+import 'data/models/shuffle_mode.dart';
+import 'data/repositories/player_repository.dart';
 
 /// Drives MCWS-driven (remote) playback. Owns the adaptive
 /// `Playback/Info` polling timer (1s while playing, 5s otherwise).
 ///
-/// Emits [PlayerSnapshot] so the unified [PlayerCubit] facade can pipe it
-/// through without re-shaping. Returns `data(null)` whenever the active
+/// Emits [PlayerSnapshot]. Returns `data(null)` whenever the active
 /// zone is virtual (Local / Offline / Android Auto) — that branch belongs
-/// to [LocalPlayerCubit].
-class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
+/// to [LocalPlaybackService].
+class McwsPlayerService implements PlayerController {
   final PlayerRepository _repo;
   final LibraryRepository _library;
   final SessionService _session;
   final ActiveZoneService _activeZone;
   final Talker _talker;
 
+  PlayerSnapshot _state = const PlayerSnapshot.loading();
+  PlayerSnapshot get state => _state;
+
+  final _controller = StreamController<PlayerSnapshot>.broadcast();
+  Stream<PlayerSnapshot> get stream => _controller.stream;
+
   StreamSubscription<SessionState>? _sessionSub;
   StreamSubscription<Zone?>? _activeZoneSub;
   Timer? _timer;
   bool _paused = false;
 
-  McwsPlayerBloc({
+  McwsPlayerService({
     required PlayerRepository repository,
     required LibraryRepository library,
     required SessionService session,
@@ -45,11 +49,17 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
        _library = library,
        _session = session,
        _activeZone = activeZone,
-       _talker = talker,
-       super(const PlayerSnapshot.loading()) {
+       _talker = talker {
     _sessionSub = _session.stream.listen(_evaluatePolling);
     _activeZoneSub = _activeZone.stream.listen(_onZoneChanged);
     _evaluatePolling(_session.state);
+  }
+
+  void _emit(PlayerSnapshot next) {
+    if (_state != next) {
+      _state = next;
+      _controller.add(next);
+    }
   }
 
   Zone? get _zone => _activeZone.state;
@@ -62,7 +72,7 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
 
   void _onZoneChanged(Zone? zone) {
     if (zone == null || !_isRemoteZone) {
-      emit(const PlayerSnapshot.data(status: null));
+      _emit(const PlayerSnapshot.data(status: null));
       _stopTimer();
       return;
     }
@@ -76,7 +86,7 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
         if (_isRemoteZone && !_paused) _scheduleNext();
       case Restoring() || Unauthenticated():
         _stopTimer();
-        emit(const PlayerSnapshot.loading());
+        _emit(const PlayerSnapshot.loading());
     }
   }
 
@@ -121,9 +131,9 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
     if (zone == null || !_isRemoteZone) return;
     final result = await _repo.getPlaybackInfo(zone.id);
     result.fold((e) {
-      _talker.warning('[McwsPlayerBloc] getPlaybackInfo failed: $e');
-      emit(PlayerSnapshot.error(error: e));
-    }, (status) => emit(PlayerSnapshot.data(status: status)));
+      _talker.warning('[McwsPlayerService] getPlaybackInfo failed: $e');
+      _emit(PlayerSnapshot.error(error: e));
+    }, (status) => _emit(PlayerSnapshot.data(status: status)));
   }
 
   @override
@@ -210,11 +220,10 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
     await refresh();
   }
 
-  @override
-  Future<void> close() async {
+  void dispose() {
     _stopTimer();
-    await _sessionSub?.cancel();
-    await _activeZoneSub?.cancel();
-    return super.close();
+    _sessionSub?.cancel();
+    _activeZoneSub?.cancel();
+    _controller.close();
   }
 }

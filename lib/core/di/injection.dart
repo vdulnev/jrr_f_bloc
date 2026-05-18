@@ -25,6 +25,7 @@ import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
+import '../../features/player/mcws_player_service.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
@@ -126,6 +127,18 @@ Future<void> configureDependencies() async {
   // observe it without each owning a private subscription chain.
   getIt.registerSingleton<ActiveZoneService>(
     ActiveZoneService(prefs: prefs, talker: getIt<Talker>()),
+  );
+
+  // MCWS remote player — owns remote playback polling and commands.
+  // Registered eagerly so polling starts at boot.
+  getIt.registerSingleton<McwsPlayerService>(
+    McwsPlayerService(
+      repository: getIt<PlayerRepository>(),
+      library: getIt<LibraryRepository>(),
+      session: getIt<SessionService>(),
+      activeZone: getIt<ActiveZoneService>(),
+      talker: getIt<Talker>(),
+    ),
   );
 
   // Session — owns the connection lifecycle. Constructed here so its

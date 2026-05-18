@@ -328,7 +328,7 @@ play. Rule 1 satisfied for all three screens.
 - Bulk actions (play/delete) for artists moved into `DownloadedArtistsCubit`.
 - Rule 2 satisfied: no direct `DownloadedTracksService` or `DownloadsRepository` reads in the screens.
 
-### Phase 6 — `McwsPlayerService` (1 day)
+### Phase 6 — `McwsPlayerService` (1 day) — ✅ done
 
 **Goal.** Retire `McwsPlayerBloc`. Its consumers are internal: only
 `PlayerCubit` and `PlayerControllerCubit` reference it today.
@@ -345,6 +345,12 @@ play. Rule 1 satisfied for all three screens.
 **Acceptance.** MCWS playback poll cadence unchanged (1 s playing, 5 s
 idle). Pause/resume on app background still works. Analyzer + tests
 green.
+
+**Notes (post-implementation).**
+- `McwsPlayerService` implemented as a standard GetIt singleton.
+- `McwsPlayerBloc` file deleted and provider removed from `app.dart`.
+- Core player cubits refactored to depend on the service via constructor injection.
+- App lifecycle listener updated to use the service singleton for pause/resume.
 
 ### Phase 7 — `LocalPlaybackService` (1.5 days)
 
