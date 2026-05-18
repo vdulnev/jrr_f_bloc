@@ -308,7 +308,7 @@ satisfied for every tile.
 - `LibraryItemTileCubit` and `AlbumRowTileCubit` now accept full `Track`/`Album` objects and manage their own dependencies via constructor injection.
 - `ServerManagerScreen` refactored to remove `StreamBuilder` and direct `getIt<DownloadsRepository>` calls.
 
-### Phase 5 — Downloaded screen companion cubits (½ day)
+### Phase 5 — Downloaded screen companion cubits (½ day) — ✅ done
 
 **Goal.** Same as Phase 4 but for the three downloaded-content screens.
 
@@ -321,6 +321,12 @@ satisfied for every tile.
 **Acceptance.** Offline Mode flow: download album → kill server →
 relaunch → Continue Offline → drill into downloaded artists/albums →
 play. Rule 1 satisfied for all three screens.
+
+**Notes (post-implementation).**
+- Three new screen-level companion cubits implemented.
+- All filtering and sorting logic moved from widgets into cubits.
+- Bulk actions (play/delete) for artists moved into `DownloadedArtistsCubit`.
+- Rule 2 satisfied: no direct `DownloadedTracksService` or `DownloadsRepository` reads in the screens.
 
 ### Phase 6 — `McwsPlayerService` (1 day)
 

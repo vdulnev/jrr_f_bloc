@@ -3,51 +3,41 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../library/data/models/tracks.dart';
 import '../../player/bloc/player_controller_cubit.dart';
+import '../bloc/downloaded_artists_cubit.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../downloaded_tracks_service.dart';
 import 'confirm_delete_dialog.dart';
 import 'downloaded_navigation.dart';
 
-String _normalizedArtist(DownloadedTrack t) =>
-    t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;
-
-List<String> _artistsFrom(List<DownloadedTrack> tracks) {
-  final artists = tracks.map(_normalizedArtist).toSet().toList()
-    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-  return artists;
-}
-
 class DownloadedArtistsScreen extends StatelessWidget {
   const DownloadedArtistsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final service = getIt<DownloadedTracksService>();
-    return StreamBuilder<List<DownloadedTrack>>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final downloaded = snap.data ?? service.state;
-        final artists = _artistsFrom(downloaded);
-        if (artists.isEmpty) return const _EmptyState();
-        return CustomScrollView(
-          slivers: [
-            SliverList.builder(
-              itemCount: artists.length,
-              itemBuilder: (_, i) => _ArtistRow(
-                artist: artists[i],
-                tracks: downloaded
-                    .where((t) => _normalizedArtist(t) == artists[i])
-                    .toList(),
+    return BlocProvider<DownloadedArtistsCubit>(
+      create: (_) => DownloadedArtistsCubit(
+        service: getIt<DownloadedTracksService>(),
+        repo: getIt<DownloadsRepository>(),
+      ),
+      child: BlocBuilder<DownloadedArtistsCubit, DownloadedArtistsState>(
+        builder: (context, state) {
+          if (state.isEmpty) return const _EmptyState();
+          return CustomScrollView(
+            slivers: [
+              SliverList.builder(
+                itemCount: state.length,
+                itemBuilder: (_, i) => _ArtistRow(
+                  artist: state[i].artist,
+                  tracks: state[i].tracks,
+                ),
               ),
-            ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-          ],
-        );
-      },
+              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -143,37 +133,24 @@ class _ArtistRow extends StatelessWidget {
   }
 
   Future<void> _handleAction(BuildContext context, String action) async {
-    final sortedTracks = tracks.map((t) => t.track).toList()
-      ..sort((a, b) {
-        final albumCompare = a.album.compareTo(b.album);
-        if (albumCompare != 0) return albumCompare;
-        final discCompare = a.discNumber.compareTo(b.discNumber);
-        if (discCompare != 0) return discCompare;
-        return a.trackNumber.compareTo(b.trackNumber);
-      });
-    if (sortedTracks.isEmpty) return;
-
-    final wrapped = Tracks(tracks: sortedTracks);
+    final cubit = context.read<DownloadedArtistsCubit>();
     final controller = context.read<PlayerControllerCubit>();
     switch (action) {
       case 'play':
-        await controller.playNow(wrapped);
+        await cubit.play(tracks, controller);
       case 'playNext':
-        await controller.playNext(wrapped);
+        await cubit.playNext(tracks, controller);
       case 'add':
-        await controller.addToQueue(wrapped);
+        await cubit.add(tracks, controller);
       case 'deleteDownload':
         if (!context.mounted) return;
         final confirmed = await showConfirmDeleteDialog(
           context: context,
           title: 'Delete downloads?',
           message:
-              'Delete all ${sortedTracks.length} downloaded tracks for "$artist"?',
+              'Delete all ${tracks.length} downloaded tracks for "$artist"?',
         );
-        if (!confirmed) return;
-        await getIt<DownloadsRepository>().deleteAll(
-          sortedTracks.map((t) => t.fileKey).toList(),
-        );
+        if (confirmed) await cubit.delete(tracks);
     }
   }
 }
