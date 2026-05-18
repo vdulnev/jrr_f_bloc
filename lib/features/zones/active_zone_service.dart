@@ -1,25 +1,39 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
-import '../data/models/zone.dart';
-import '../data/repositories/zone_repository.dart';
+import 'data/models/zone.dart';
+import 'data/repositories/zone_repository.dart';
 
 /// Tracks which zone the user is targeting. State is the active zone or
 /// `null` when none has been chosen yet (e.g. zone list still loading).
 ///
 /// Persists the active zone's GUID under [kActiveZoneGuidKey] so the same
-/// zone is restored on relaunch.
-class ActiveZoneCubit extends Cubit<Zone?> {
+/// zone is restored on relaunch. Lives outside the bloc tree so other
+/// services / blocs can observe it without coupling to widget lifecycle.
+class ActiveZoneService {
   final SharedPreferences _prefs;
   final Talker _talker;
 
-  ActiveZoneCubit({required SharedPreferences prefs, required Talker talker})
-    : _prefs = prefs,
-      _talker = talker,
-      super(null);
+  final StreamController<Zone?> _controller =
+      StreamController<Zone?>.broadcast();
+  Zone? _state;
 
-  /// Called by [ZonesCubit] whenever a fresh zone list arrives. Restores
+  ActiveZoneService({required SharedPreferences prefs, required Talker talker})
+    : _prefs = prefs,
+      _talker = talker;
+
+  Zone? get state => _state;
+  Stream<Zone?> get stream => _controller.stream;
+
+  void _emit(Zone? next) {
+    if (_state == next) return;
+    _state = next;
+    _controller.add(next);
+  }
+
+  /// Called by `ZonesCubit` whenever a fresh zone list arrives. Restores
   /// the previously saved zone, falls back to the first zone, or clears
   /// state if the list is empty.
   void onZonesLoaded(List<Zone> zones) {
@@ -35,26 +49,28 @@ class ActiveZoneCubit extends Cubit<Zone?> {
           )
         : zones.first;
     _talker.debug(
-      '[ActiveZoneCubit] Resolved active zone ${next.name} '
+      '[ActiveZoneService] Resolved active zone ${next.name} '
       '(savedGuid=$savedGuid)',
     );
     _emitAndPersist(next);
   }
 
   void setZone(Zone zone) {
-    _talker.debug('[ActiveZoneCubit] setZone ${zone.name}');
+    _talker.debug('[ActiveZoneService] setZone ${zone.name}');
     _emitAndPersist(zone);
   }
 
   void clear() {
-    if (state == null) return;
-    _talker.debug('[ActiveZoneCubit] cleared');
-    emit(null);
+    if (_state == null) return;
+    _talker.debug('[ActiveZoneService] cleared');
+    _emit(null);
     _prefs.remove(kActiveZoneGuidKey);
   }
 
   void _emitAndPersist(Zone zone) {
-    emit(zone);
+    _emit(zone);
     _prefs.setString(kActiveZoneGuidKey, zone.guid);
   }
+
+  Future<void> dispose() async => _controller.close();
 }

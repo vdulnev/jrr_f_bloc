@@ -8,7 +8,7 @@ import '../../connection/bloc/session_state.dart';
 import '../../connection/session_service.dart';
 import '../data/models/zone.dart';
 import '../data/repositories/zone_repository.dart';
-import 'active_zone_cubit.dart';
+import '../active_zone_service.dart';
 import 'zones_state.dart';
 
 /// Loads the zone list from the server and polls every 30s while the
@@ -17,7 +17,7 @@ import 'zones_state.dart';
 class ZonesCubit extends Cubit<ZonesState> {
   final ZoneRepository _repo;
   final SessionService _session;
-  final ActiveZoneCubit _activeZone;
+  final ActiveZoneService _activeZone;
   final Talker _talker;
 
   static const _pollInterval = Duration(seconds: 30);
@@ -29,7 +29,7 @@ class ZonesCubit extends Cubit<ZonesState> {
   ZonesCubit({
     required ZoneRepository repository,
     required SessionService session,
-    required ActiveZoneCubit activeZone,
+    required ActiveZoneService activeZone,
     required Talker talker,
   }) : _repo = repository,
        _session = session,

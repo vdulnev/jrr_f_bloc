@@ -9,7 +9,8 @@ import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
 import '../../library/bloc/search_by_file_key_cubit.dart';
 import '../../library/data/models/track.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../../core/di/injection.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../bloc/player_controller_cubit.dart';
 import '../bloc/player_cubit.dart';
@@ -24,8 +25,16 @@ class NowPlayingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ActiveZoneCubit, Zone?>(
-      builder: (context, activeZone) {
+    final service = getIt<ActiveZoneService>();
+    // NOTE: NowPlayingScreen still violates rule 1 (PlayerCubit +
+    // PlayerControllerCubit + SearchByFileKeyCubit + active-zone read).
+    // A future refactor folds active zone into a NowPlayingCubit that
+    // aggregates everything this screen needs into one state object.
+    return StreamBuilder<Zone?>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final activeZone = snap.data ?? service.state;
         if (activeZone == null) return const Scaffold(body: LoadingView());
 
         return BlocConsumer<PlayerCubit, PlayerSnapshot>(

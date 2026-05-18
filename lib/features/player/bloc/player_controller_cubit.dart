@@ -1,5 +1,5 @@
 import '../../library/data/models/tracks.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import 'local_player_cubit.dart';
 import 'mcws_player_bloc.dart';
@@ -11,12 +11,12 @@ import 'player_controller.dart';
 class PlayerControllerCubit implements PlayerController {
   final McwsPlayerBloc _mcws;
   final LocalPlayerCubit _local;
-  final ActiveZoneCubit _activeZone;
+  final ActiveZoneService _activeZone;
 
   PlayerControllerCubit({
     required McwsPlayerBloc mcws,
     required LocalPlayerCubit local,
-    required ActiveZoneCubit activeZone,
+    required ActiveZoneService activeZone,
   }) : _mcws = mcws,
        _local = local,
        _activeZone = activeZone;

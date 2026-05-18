@@ -12,7 +12,7 @@ import '../../library/data/models/tracks.dart';
 import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../queue/data/repositories/local_queue_repository.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
@@ -45,7 +45,7 @@ const _kVolumePref = 'local_player_volume';
 class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     implements PlayerController {
   final LocalPlayerService _service;
-  final ActiveZoneCubit _activeZone;
+  final ActiveZoneService _activeZone;
   final LocalQueueRepository _queueRepo;
   final DownloadsRepository _downloadsRepo;
   final SharedPreferences _prefs;
@@ -76,7 +76,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
 
   LocalPlayerCubit({
     required LocalPlayerService service,
-    required ActiveZoneCubit activeZone,
+    required ActiveZoneService activeZone,
     required LocalQueueRepository queueRepository,
     required DownloadsRepository downloadsRepository,
     required SharedPreferences prefs,

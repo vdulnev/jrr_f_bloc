@@ -7,7 +7,7 @@ import '../../connection/bloc/session_state.dart';
 import '../../connection/session_service.dart';
 import '../../library/data/models/tracks.dart';
 import '../../library/data/repositories/library_repository.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/repeat_mode.dart';
@@ -27,7 +27,7 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
   final PlayerRepository _repo;
   final LibraryRepository _library;
   final SessionService _session;
-  final ActiveZoneCubit _activeZone;
+  final ActiveZoneService _activeZone;
   final Talker _talker;
 
   StreamSubscription<SessionState>? _sessionSub;
@@ -39,7 +39,7 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
     required PlayerRepository repository,
     required LibraryRepository library,
     required SessionService session,
-    required ActiveZoneCubit activeZone,
+    required ActiveZoneService activeZone,
     required Talker talker,
   }) : _repo = repository,
        _library = library,

@@ -28,7 +28,7 @@ import 'features/player/services/local_player_service.dart';
 import 'features/queue/bloc/queue_cubit.dart';
 import 'features/queue/data/repositories/local_queue_repository.dart';
 import 'features/queue/data/repositories/queue_repository.dart';
-import 'features/zones/bloc/active_zone_cubit.dart';
+import 'features/zones/active_zone_service.dart';
 import 'features/zones/bloc/zones_cubit.dart';
 import 'features/zones/data/repositories/zone_repository.dart';
 
@@ -62,19 +62,16 @@ class _AppState extends State<App> {
             repository: getIt<ConnectionRepository>(),
           ),
         ),
-        BlocProvider<ActiveZoneCubit>(
-          create: (_) => ActiveZoneCubit(prefs: getIt(), talker: getIt()),
-        ),
-        // ZonesCubit polls the server and drives ActiveZoneCubit.
+        // ZonesCubit polls the server and drives ActiveZoneService.
         // Lazy creation would leave the active zone null until the user
         // visits the Zones tab — and the Now Playing screen waits on
         // that to leave its loader.
         BlocProvider<ZonesCubit>(
           lazy: false,
-          create: (ctx) => ZonesCubit(
+          create: (_) => ZonesCubit(
             repository: getIt<ZoneRepository>(),
             session: getIt<SessionService>(),
-            activeZone: ctx.read<ActiveZoneCubit>(),
+            activeZone: getIt<ActiveZoneService>(),
             talker: getIt(),
           ),
         ),
@@ -89,7 +86,7 @@ class _AppState extends State<App> {
             repository: getIt<PlayerRepository>(),
             library: getIt<LibraryRepository>(),
             session: getIt<SessionService>(),
-            activeZone: ctx.read<ActiveZoneCubit>(),
+            activeZone: getIt<ActiveZoneService>(),
             talker: getIt(),
           ),
         ),
@@ -99,7 +96,7 @@ class _AppState extends State<App> {
           lazy: false,
           create: (ctx) => LocalPlayerCubit(
             service: getIt<LocalPlayerService>(),
-            activeZone: ctx.read<ActiveZoneCubit>(),
+            activeZone: getIt<ActiveZoneService>(),
             queueRepository: getIt<LocalQueueRepository>(),
             downloadsRepository: getIt<DownloadsRepository>(),
             prefs: getIt(),
@@ -112,7 +109,7 @@ class _AppState extends State<App> {
           create: (ctx) => PlayerCubit(
             mcws: ctx.read<McwsPlayerBloc>(),
             local: ctx.read<LocalPlayerCubit>(),
-            activeZone: ctx.read<ActiveZoneCubit>(),
+            activeZone: getIt<ActiveZoneService>(),
           ),
         ),
         // QueueCubit watches the playing-now change counter; eager so
@@ -123,7 +120,7 @@ class _AppState extends State<App> {
             repository: getIt<QueueRepository>(),
             service: getIt<LocalPlayerService>(),
             localPlayer: ctx.read<LocalPlayerCubit>(),
-            activeZone: ctx.read<ActiveZoneCubit>(),
+            activeZone: getIt<ActiveZoneService>(),
             player: ctx.read<PlayerCubit>(),
             talker: getIt(),
           ),
@@ -156,7 +153,7 @@ class _AppState extends State<App> {
         create: (ctx) => PlayerControllerCubit(
           mcws: ctx.read<McwsPlayerBloc>(),
           local: ctx.read<LocalPlayerCubit>(),
-          activeZone: ctx.read<ActiveZoneCubit>(),
+          activeZone: getIt<ActiveZoneService>(),
         ),
         child: _LifecycleScope(child: _MaterialApp(router: _router)),
       ),

@@ -10,7 +10,7 @@ import '../../player/bloc/local_player_cubit.dart';
 import '../../player/bloc/player_cubit.dart';
 import '../../player/bloc/player_state.dart';
 import '../../player/services/local_player_service.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/repositories/queue_repository.dart';
 import 'queue_state.dart';
@@ -25,7 +25,7 @@ class QueueCubit extends Cubit<QueueState> {
   final QueueRepository _repo;
   final LocalPlayerService _service;
   final LocalPlayerCubit _localPlayer;
-  final ActiveZoneCubit _activeZone;
+  final ActiveZoneService _activeZone;
   final PlayerCubit _player;
   final Talker _talker;
 
@@ -39,7 +39,7 @@ class QueueCubit extends Cubit<QueueState> {
     required QueueRepository repository,
     required LocalPlayerService service,
     required LocalPlayerCubit localPlayer,
-    required ActiveZoneCubit activeZone,
+    required ActiveZoneService activeZone,
     required PlayerCubit player,
     required Talker talker,
   }) : _repo = repository,

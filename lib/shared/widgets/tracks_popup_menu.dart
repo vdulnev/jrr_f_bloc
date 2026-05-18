@@ -11,7 +11,7 @@ import '../../features/offline/data/models/download_state.dart';
 import '../../features/offline/data/models/downloaded_track.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/player/bloc/player_controller_cubit.dart';
-import '../../features/zones/bloc/active_zone_cubit.dart';
+import '../../features/zones/active_zone_service.dart';
 import '../../features/zones/data/models/zone.dart';
 
 /// Compact popup menu for a group of tracks. Play / Play next / Add are
@@ -26,8 +26,12 @@ class TracksPopupMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ActiveZoneCubit, Zone?>(
-      builder: (context, activeZone) {
+    final service = getIt<ActiveZoneService>();
+    return StreamBuilder<Zone?>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final activeZone = snap.data ?? service.state;
         final isOffline = activeZone?.isOffline == true;
         return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
           builder: (context, downloaded) =>

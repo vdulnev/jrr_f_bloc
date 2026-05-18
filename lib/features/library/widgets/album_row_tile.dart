@@ -14,7 +14,7 @@ import '../../offline/widgets/album_download_progress_indicator.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/downloaded_navigation.dart';
 import '../../player/bloc/player_controller_cubit.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/album.dart';
 import '../data/models/tracks.dart';
@@ -51,8 +51,12 @@ class AlbumRowTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ActiveZoneCubit, Zone?>(
-      builder: (context, activeZone) {
+    final service = getIt<ActiveZoneService>();
+    return StreamBuilder<Zone?>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final activeZone = snap.data ?? service.state;
         final isOffline = activeZone?.isOffline == true;
         return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
           builder: (context, downloaded) =>

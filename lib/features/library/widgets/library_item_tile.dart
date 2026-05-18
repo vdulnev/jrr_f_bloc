@@ -13,7 +13,7 @@ import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
 import '../../player/bloc/player_controller_cubit.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../data/models/track.dart';
 import '../data/models/tracks.dart';
@@ -99,28 +99,37 @@ class _LibraryItemTileState extends State<LibraryItemTile> {
         children: [
           DownloadProgressIndicator(fileKey: item.fileKey),
           const SizedBox(width: 4),
-          BlocBuilder<ActiveZoneCubit, Zone?>(
-            builder: (context, activeZone) {
-              final isOffline = activeZone?.isOffline == true;
-              return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-                builder: (context, downloaded) =>
-                    BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-                      builder: (context, jobs) {
-                        final status = DownloadStatus.forTrack(
-                          fileKey: item.fileKey,
-                          downloaded: downloaded,
-                          jobs: jobs,
-                        );
-                        if (isOffline && status != DownloadState.downloaded) {
-                          return const SizedBox(width: 18);
-                        }
-                        return _Menu(
-                          item: item,
-                          status: status,
-                          isOffline: isOffline,
-                        );
-                      },
-                    ),
+          Builder(
+            builder: (context) {
+              final service = getIt<ActiveZoneService>();
+              return StreamBuilder<Zone?>(
+                stream: service.stream,
+                initialData: service.state,
+                builder: (context, snap) {
+                  final activeZone = snap.data ?? service.state;
+                  final isOffline = activeZone?.isOffline == true;
+                  return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
+                    builder: (context, downloaded) =>
+                        BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
+                          builder: (context, jobs) {
+                            final status = DownloadStatus.forTrack(
+                              fileKey: item.fileKey,
+                              downloaded: downloaded,
+                              jobs: jobs,
+                            );
+                            if (isOffline &&
+                                status != DownloadState.downloaded) {
+                              return const SizedBox(width: 18);
+                            }
+                            return _Menu(
+                              item: item,
+                              status: status,
+                              isOffline: isOffline,
+                            );
+                          },
+                        ),
+                  );
+                },
               );
             },
           ),

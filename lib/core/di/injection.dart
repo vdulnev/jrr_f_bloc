@@ -25,6 +25,7 @@ import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
+import '../../features/zones/active_zone_service.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
 import '../../features/zones/services/android_auto_session_service.dart';
@@ -94,6 +95,13 @@ Future<void> configureDependencies() async {
 
   // Favorites repository — manages favorite items from the browse screen.
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
+
+  // ActiveZone — tracks which zone the user is targeting. Lives in the
+  // service container so blocs (player, queue, mcws-player, etc.)
+  // observe it without each owning a private subscription chain.
+  getIt.registerSingleton<ActiveZoneService>(
+    ActiveZoneService(prefs: prefs, talker: getIt<Talker>()),
+  );
 
   // Session — owns the connection lifecycle. Constructed here so its
   // silent-reconnect attempt fires at app boot rather than waiting on a

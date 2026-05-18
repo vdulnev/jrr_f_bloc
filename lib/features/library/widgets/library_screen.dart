@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../zones/bloc/active_zone_cubit.dart';
+import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
 import '../bloc/artists_cubit.dart';
 import '../bloc/random_albums_cubit.dart';
@@ -41,9 +41,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ActiveZoneCubit, Zone?>(
-      buildWhen: (a, b) => (a?.isOffline ?? false) != (b?.isOffline ?? false),
-      builder: (context, zone) {
+    final service = getIt<ActiveZoneService>();
+    // NOTE: rule 1 deviation — LibraryScreen wraps a MultiBlocProvider
+    // with three nested cubits. A future refactor folds tab + offline
+    // state into a single LibraryCubit.
+    return StreamBuilder<Zone?>(
+      stream: service.stream
+          .distinct((a, b) => (a?.isOffline ?? false) == (b?.isOffline ?? false)),
+      initialData: service.state,
+      builder: (context, snap) {
+        final zone = snap.data ?? service.state;
         final isOffline = zone?.isOffline == true;
         final tabs = isOffline
             ? LibraryScreen._offlineTabs
