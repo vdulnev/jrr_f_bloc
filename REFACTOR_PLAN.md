@@ -196,7 +196,7 @@ Bottom-up by dependency graph. Every phase:
 
 Effort estimates assume one engineer familiar with the codebase.
 
-### Phase 1 — `TrackLookupService` (½ day)
+### Phase 1 — `TrackLookupService` (½ day) — ✅ done
 
 **Goal.** Retire `SearchByFileKeyCubit`. The Now Playing header
 enrichment goes through a service instead.
@@ -210,6 +210,16 @@ enrichment goes through a service instead.
 
 **Acceptance.** Now Playing header still shows `fileType` after track
 change. Analyzer + tests green.
+
+**Notes (post-implementation).**
+- Service de-dupes same-key lookups internally (`_lastFileKey`) so the
+  `BlocConsumer.listenWhen` filter in `NowPlayingScreen` is now belt-
+  and-braces — both layers prevent re-fetches.
+- The screen still violates Rule 1 (binds to `PlayerCubit` +
+  `PlayerControllerCubit` + reads `ActiveZoneService` and
+  `TrackLookupService` via `StreamBuilder`); the comment in
+  `NowPlayingScreen.build` now points to Phase 8 for the single-cubit
+  fix.
 
 ### Phase 2 — `FavoritesService` (½ day)
 
@@ -405,7 +415,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 
 | Phase | Title                                              | Effort   |
 |-------|----------------------------------------------------|----------|
-| 1     | TrackLookupService                                 | ½ day    |
+| 1     | TrackLookupService ✅                              | ½ day    |
 | 2     | FavoritesService                                   | ½ day    |
 | 3     | Download stream services                           | ½ day    |
 | 4     | Download-aware tile / indicator companion cubits   | 1 day    |

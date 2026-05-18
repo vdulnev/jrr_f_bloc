@@ -15,6 +15,7 @@ import '../../features/favorites/data/repositories/favorites_repository.dart';
 import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
+import '../../features/library/track_lookup_service.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/offline/data/repositories/downloads_repository_impl.dart';
 import '../../features/offline/services/download_service.dart';
@@ -95,6 +96,12 @@ Future<void> configureDependencies() async {
 
   // Favorites repository — manages favorite items from the browse screen.
   getIt.registerSingleton<FavoritesRepository>(FavoritesRepositoryImpl());
+
+  // Library track lookup — File/GetInfo enrichment for the Now Playing
+  // header. Stateless apart from the last-resolved track snapshot.
+  getIt.registerSingleton<TrackLookupService>(
+    TrackLookupService(repository: getIt<LibraryRepository>()),
+  );
 
   // ActiveZone — tracks which zone the user is targeting. Lives in the
   // service container so blocs (player, queue, mcws-player, etc.)

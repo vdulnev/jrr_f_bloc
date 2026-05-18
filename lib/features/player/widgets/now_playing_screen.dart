@@ -7,8 +7,8 @@ import '../../../shared/widgets/loading_view.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
-import '../../library/bloc/search_by_file_key_cubit.dart';
 import '../../library/data/models/track.dart';
+import '../../library/track_lookup_service.dart';
 import '../../../core/di/injection.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
@@ -27,9 +27,8 @@ class NowPlayingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = getIt<ActiveZoneService>();
     // NOTE: NowPlayingScreen still violates rule 1 (PlayerCubit +
-    // PlayerControllerCubit + SearchByFileKeyCubit + active-zone read).
-    // A future refactor folds active zone into a NowPlayingCubit that
-    // aggregates everything this screen needs into one state object.
+    // PlayerControllerCubit + active-zone read + track-lookup read).
+    // Phase 8 of REFACTOR_PLAN folds all of these into NowPlayingCubit.
     return StreamBuilder<Zone?>(
       stream: service.stream,
       initialData: service.state,
@@ -54,7 +53,7 @@ class NowPlayingScreen extends StatelessWidget {
               PlayerData(:final status) => status?.fileKey ?? -1,
               _ => -1,
             };
-            context.read<SearchByFileKeyCubit>().lookup(key);
+            getIt<TrackLookupService>().lookup(key);
           },
           builder: (context, snap) {
             final status = switch (snap) {
@@ -95,21 +94,28 @@ class _NowPlayingBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: BlocBuilder<SearchByFileKeyCubit, Track?>(
-                      builder: (context, track) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'NOW PLAYING',
-                            style: AppTextStyles.sectionLabel,
+                    child: Builder(
+                      builder: (context) {
+                        final lookup = getIt<TrackLookupService>();
+                        return StreamBuilder<Track?>(
+                          stream: lookup.stream,
+                          initialData: lookup.state,
+                          builder: (context, snap) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'NOW PLAYING',
+                                style: AppTextStyles.sectionLabel,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatHeader(zone.name, status, snap.data),
+                                style: AppTextStyles.itemSubtitle,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatHeader(zone.name, status, track),
-                            style: AppTextStyles.itemSubtitle,
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                   if (status.playingNowTracks > 0)

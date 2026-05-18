@@ -13,7 +13,6 @@ import 'features/connection/session_service.dart';
 import 'features/favorites/bloc/favorites_cubit.dart';
 import 'features/favorites/data/repositories/favorites_repository.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
-import 'features/library/bloc/search_by_file_key_cubit.dart';
 import 'features/library/data/repositories/library_repository.dart';
 import 'features/offline/bloc/download_jobs_cubit.dart';
 import 'features/offline/bloc/downloaded_tracks_cubit.dart';
@@ -126,10 +125,6 @@ class _AppState extends State<App> {
           ),
         ),
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
-        BlocProvider<SearchByFileKeyCubit>(
-          create: (_) =>
-              SearchByFileKeyCubit(repository: getIt<LibraryRepository>()),
-        ),
         // Favorites + downloads cubits expose stream-backed state used by
         // tile chrome across the library — eager so tiles never render
         // with stale "not downloaded" badges before the first emission.
