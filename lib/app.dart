@@ -11,15 +11,13 @@ import 'features/connection/bloc/root_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
-import 'features/offline/data/repositories/downloads_repository.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
-import 'features/player/bloc/local_player_cubit.dart';
 import 'features/player/bloc/player_controller_cubit.dart';
 import 'features/player/bloc/player_cubit.dart';
+import 'features/player/local_playback_service.dart';
 import 'features/player/mcws_player_service.dart';
 import 'features/player/services/local_player_service.dart';
 import 'features/queue/bloc/queue_cubit.dart';
-import 'features/queue/data/repositories/local_queue_repository.dart';
 import 'features/queue/data/repositories/queue_repository.dart';
 import 'features/zones/active_zone_service.dart';
 import 'features/zones/bloc/zones_cubit.dart';
@@ -71,25 +69,12 @@ class _AppState extends State<App> {
         BlocProvider<LocalAudioQualityCubit>(
           create: (_) => LocalAudioQualityCubit(prefs: getIt()),
         ),
-        // LocalPlayerCubit owns just_audio stream subscriptions and the
-        // per-zone queue restore on launch.
-        BlocProvider<LocalPlayerCubit>(
-          lazy: false,
-          create: (ctx) => LocalPlayerCubit(
-            service: getIt<LocalPlayerService>(),
-            activeZone: getIt<ActiveZoneService>(),
-            queueRepository: getIt<LocalQueueRepository>(),
-            downloadsRepository: getIt<DownloadsRepository>(),
-            prefs: getIt(),
-            talker: getIt(),
-          ),
-        ),
         // PlayerCubit forwards snapshots from MCWS / Local based on zone.
         BlocProvider<PlayerCubit>(
           lazy: false,
           create: (ctx) => PlayerCubit(
             mcws: getIt<McwsPlayerService>(),
-            local: ctx.read<LocalPlayerCubit>(),
+            local: getIt<LocalPlaybackService>(),
             activeZone: getIt<ActiveZoneService>(),
           ),
         ),
@@ -100,7 +85,7 @@ class _AppState extends State<App> {
           create: (ctx) => QueueCubit(
             repository: getIt<QueueRepository>(),
             service: getIt<LocalPlayerService>(),
-            localPlayer: ctx.read<LocalPlayerCubit>(),
+            localPlayer: getIt<LocalPlaybackService>(),
             activeZone: getIt<ActiveZoneService>(),
             player: ctx.read<PlayerCubit>(),
             talker: getIt(),
@@ -111,7 +96,7 @@ class _AppState extends State<App> {
       child: RepositoryProvider<PlayerControllerCubit>(
         create: (ctx) => PlayerControllerCubit(
           mcws: getIt<McwsPlayerService>(),
-          local: ctx.read<LocalPlayerCubit>(),
+          local: getIt<LocalPlaybackService>(),
           activeZone: getIt<ActiveZoneService>(),
         ),
         child: _LifecycleScope(child: _MaterialApp(router: _router)),

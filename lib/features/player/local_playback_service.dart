@@ -1,28 +1,26 @@
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../core/di/injection.dart';
-import '../../library/data/models/track.dart';
-import '../../library/data/models/tracks.dart';
-import '../../offline/data/models/downloaded_track.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
-import '../../queue/data/repositories/local_queue_repository.dart';
-import '../../zones/active_zone_service.dart';
-import '../../zones/data/models/zone.dart';
-import '../data/models/playback_state.dart';
-import '../data/models/player_status.dart';
-import '../data/models/repeat_mode.dart';
-import '../data/models/shuffle_mode.dart';
-import '../services/android_auto_player_service.dart';
-import '../services/jrr_audio_handler.dart';
-import '../services/local_player_service.dart';
-import 'player_controller.dart';
-import 'player_state.dart';
+import '../library/data/models/track.dart';
+import '../library/data/models/tracks.dart';
+import '../offline/data/models/downloaded_track.dart';
+import '../offline/data/repositories/downloads_repository.dart';
+import '../queue/data/repositories/local_queue_repository.dart';
+import '../zones/active_zone_service.dart';
+import '../zones/data/models/zone.dart';
+import 'bloc/player_controller.dart';
+import 'bloc/player_state.dart';
+import 'data/models/playback_state.dart';
+import 'data/models/player_status.dart';
+import 'data/models/repeat_mode.dart';
+import 'data/models/shuffle_mode.dart';
+import 'services/android_auto_player_service.dart';
+import 'services/jrr_audio_handler.dart';
+import 'services/local_player_service.dart';
+import '../../core/di/injection.dart';
 
 String _zoneKey(Zone zone) {
   if (zone.isOffline) return 'offline';
@@ -39,17 +37,21 @@ const _kVolumePref = 'local_player_volume';
 /// streams. Persists the per-zone queue, current index, and position so
 /// playback resumes after relaunch.
 ///
-/// Phase 8 wires the downloads-set listener (so newly downloaded tracks
-/// swap streaming URLs to local file paths). Phase 10 wires the Android
-/// Auto sub-handler swap.
-class LocalPlayerCubit extends Cubit<PlayerSnapshot>
-    implements PlayerController {
+/// Subscribes to the downloads-set listener so newly downloaded tracks
+/// swap streaming URLs to local file paths.
+class LocalPlaybackService implements PlayerController {
   final LocalPlayerService _service;
   final ActiveZoneService _activeZone;
   final LocalQueueRepository _queueRepo;
   final DownloadsRepository _downloadsRepo;
   final SharedPreferences _prefs;
   final Talker _talker;
+
+  PlayerSnapshot _state = const PlayerSnapshot.data(status: null);
+  PlayerSnapshot get state => _state;
+
+  final _controller = StreamController<PlayerSnapshot>.broadcast();
+  Stream<PlayerSnapshot> get stream => _controller.stream;
 
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<PlayerState>? _stateSub;
@@ -74,7 +76,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   int? _lastSavedIndex;
   List<int>? _lastSavedKeys;
 
-  LocalPlayerCubit({
+  LocalPlaybackService({
     required LocalPlayerService service,
     required ActiveZoneService activeZone,
     required LocalQueueRepository queueRepository,
@@ -86,15 +88,14 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
        _queueRepo = queueRepository,
        _downloadsRepo = downloadsRepository,
        _prefs = prefs,
-       _talker = talker,
-       super(const PlayerSnapshot.data(status: null)) {
+       _talker = talker {
     _positionSub = _service.positionStream.listen(
       (p) {
         _position = p;
         _recompute();
       },
       onError: (Object e, StackTrace st) =>
-          _talker.error('[LocalPlayerCubit] positionStream', e, st),
+          _talker.error('[LocalPlaybackService] positionStream', e, st),
     );
     _stateSub = _service.playerStateStream.listen(
       (s) {
@@ -102,7 +103,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
         _recompute();
       },
       onError: (Object e, StackTrace st) =>
-          _talker.error('[LocalPlayerCubit] playerStateStream', e, st),
+          _talker.error('[LocalPlaybackService] playerStateStream', e, st),
     );
     _sequenceSub = _service.sequenceStateStream.listen(
       (s) {
@@ -110,7 +111,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
         _recompute();
       },
       onError: (Object e, StackTrace st) =>
-          _talker.error('[LocalPlayerCubit] sequenceStateStream', e, st),
+          _talker.error('[LocalPlaybackService] sequenceStateStream', e, st),
     );
     _volumeSub = _service.volumeStream.listen(
       (v) {
@@ -118,7 +119,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
         _recompute();
       },
       onError: (Object e, StackTrace st) =>
-          _talker.error('[LocalPlayerCubit] volumeStream', e, st),
+          _talker.error('[LocalPlaybackService] volumeStream', e, st),
     );
     _durationSub = _service.durationStream.listen(
       (d) {
@@ -126,7 +127,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
         _recompute();
       },
       onError: (Object e, StackTrace st) =>
-          _talker.error('[LocalPlayerCubit] durationStream', e, st),
+          _talker.error('[LocalPlaybackService] durationStream', e, st),
     );
     _zoneSub = _activeZone.stream.listen(_onZoneChanged);
 
@@ -176,6 +177,13 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     _recompute();
   }
 
+  void _emit(PlayerSnapshot next) {
+    if (_state != next) {
+      _state = next;
+      _controller.add(next);
+    }
+  }
+
   void _onDownloadsChanged(List<DownloadedTrack> downloaded) {
     final next = downloaded.map((t) => t.fileKey).toSet();
     final prev = _lastDownloadedKeys;
@@ -199,7 +207,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
 
     if (_currentZoneKey == 'offline' && removedRelevant.isNotEmpty) {
       _talker.info(
-        '[LocalPlayerCubit] [offline] ${removedRelevant.length} deleted '
+        '[LocalPlaybackService] [offline] ${removedRelevant.length} deleted '
         '— dropping from queue (no streaming fallback)',
       );
       _removeFromQueue(removedRelevant);
@@ -207,7 +215,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     }
 
     _talker.info(
-      '[LocalPlayerCubit] [$_currentZoneKey] downloads changed '
+      '[LocalPlaybackService] [$_currentZoneKey] downloads changed '
       '(+${addedRelevant.length} / -${removedRelevant.length}) — reloading queue',
     );
     unawaited(_reloadQueueWithCurrentState());
@@ -290,7 +298,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   }
 
   Future<void> _loadQueue(String zoneKey) async {
-    _talker.info('[LocalPlayerCubit] Loading persisted queue for $zoneKey');
+    _talker.info('[LocalPlaybackService] Loading persisted queue for $zoneKey');
     final tracksResult = await _queueRepo.getTracks(zoneKey);
     final tracks = tracksResult.match((_) => Tracks.empty, (t) => t);
     await _service.stop();
@@ -322,10 +330,10 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     final zone = _activeZone.state;
     if (zone == null ||
         (!zone.isLocal && !zone.isOffline && !zone.isAndroidAuto)) {
-      emit(const PlayerSnapshot.data(status: null));
+      _emit(const PlayerSnapshot.data(status: null));
       return;
     }
-    emit(PlayerSnapshot.data(status: _calculate(zone)));
+    _emit(PlayerSnapshot.data(status: _calculate(zone)));
   }
 
   PlayerStatus _calculate(Zone zone) {
@@ -412,25 +420,23 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
 
   @override
   Future<void> toggleMute() async {
-    final muted =
-        state is PlayerData && (state as PlayerData).status?.isMuted == true;
+    final status = state.mapOrNull(data: (d) => d.status);
+    final muted = status?.isMuted == true;
     await _service.setMute(!muted);
   }
 
   @override
   Future<void> toggleShuffle() async {
-    final current = (state is PlayerData)
-        ? (state as PlayerData).status?.shuffleMode ?? ShuffleMode.off
-        : ShuffleMode.off;
+    final status = state.mapOrNull(data: (d) => d.status);
+    final current = status?.shuffleMode ?? ShuffleMode.off;
     final next = current == ShuffleMode.off ? ShuffleMode.on : ShuffleMode.off;
     await _service.setShuffle(next);
   }
 
   @override
   Future<void> cycleRepeat() async {
-    final current = (state is PlayerData)
-        ? (state as PlayerData).status?.repeatMode ?? RepeatMode.off
-        : RepeatMode.off;
+    final status = state.mapOrNull(data: (d) => d.status);
+    final current = status?.repeatMode ?? RepeatMode.off;
     final next = switch (current) {
       RepeatMode.off => RepeatMode.playlist,
       RepeatMode.playlist => RepeatMode.track,
@@ -456,24 +462,24 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     // State pushes via streams; nothing to pull.
   }
 
-  /// Queue ops not part of [PlayerController] — used by the queue screen.
+  // ---- Queue Ops -----------------------------------------------------------
+
   Future<void> setTracks(Tracks tracks) => _service.setTracks(tracks);
   Future<void> moveTrack(int source, int target) =>
       _service.moveTrack(source, target);
   Future<void> removeTrack(int index) => _service.removeTrack(index);
 
-  @override
-  Future<void> close() async {
-    await _positionSub?.cancel();
-    await _stateSub?.cancel();
-    await _sequenceSub?.cancel();
-    await _volumeSub?.cancel();
-    await _durationSub?.cancel();
-    await _zoneSub?.cancel();
-    await _persistSub?.cancel();
-    await _persistPositionSub?.cancel();
-    await _persistVolumeSub?.cancel();
-    await _downloadsSub?.cancel();
-    return super.close();
+  void dispose() {
+    _positionSub?.cancel();
+    _stateSub?.cancel();
+    _sequenceSub?.cancel();
+    _volumeSub?.cancel();
+    _durationSub?.cancel();
+    _zoneSub?.cancel();
+    _persistSub?.cancel();
+    _persistPositionSub?.cancel();
+    _persistVolumeSub?.cancel();
+    _downloadsSub?.cancel();
+    _controller.close();
   }
 }

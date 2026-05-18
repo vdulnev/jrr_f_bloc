@@ -6,9 +6,9 @@ import 'package:talker/talker.dart';
 
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
-import '../../player/bloc/local_player_cubit.dart';
 import '../../player/bloc/player_cubit.dart';
 import '../../player/bloc/player_state.dart';
+import '../../player/local_playback_service.dart';
 import '../../player/services/local_player_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
@@ -24,7 +24,7 @@ import 'queue_state.dart';
 class QueueCubit extends Cubit<QueueState> {
   final QueueRepository _repo;
   final LocalPlayerService _service;
-  final LocalPlayerCubit _localPlayer;
+  final LocalPlaybackService _localPlayer;
   final ActiveZoneService _activeZone;
   final PlayerCubit _player;
   final Talker _talker;
@@ -38,7 +38,7 @@ class QueueCubit extends Cubit<QueueState> {
   QueueCubit({
     required QueueRepository repository,
     required LocalPlayerService service,
-    required LocalPlayerCubit localPlayer,
+    required LocalPlaybackService localPlayer,
     required ActiveZoneService activeZone,
     required PlayerCubit player,
     required Talker talker,

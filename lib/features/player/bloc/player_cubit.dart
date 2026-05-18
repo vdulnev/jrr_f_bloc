@@ -4,17 +4,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
+import '../local_playback_service.dart';
 import '../mcws_player_service.dart';
-import 'local_player_cubit.dart';
 import 'player_state.dart';
 
 /// Unified read-only view of the active player. Routes the [PlayerSnapshot]
 /// stream from either [McwsPlayerService] (real MCWS zone) or
-/// [LocalPlayerCubit] (Local / Offline / Android Auto) based on the
+/// [LocalPlaybackService] (Local / Offline / Android Auto) based on the
 /// currently active zone.
 class PlayerCubit extends Cubit<PlayerSnapshot> {
   final McwsPlayerService _mcws;
-  final LocalPlayerCubit _local;
+  final LocalPlaybackService _local;
   final ActiveZoneService _activeZone;
 
   StreamSubscription<PlayerSnapshot>? _mcwsSub;
@@ -23,7 +23,7 @@ class PlayerCubit extends Cubit<PlayerSnapshot> {
 
   PlayerCubit({
     required McwsPlayerService mcws,
-    required LocalPlayerCubit local,
+    required LocalPlaybackService local,
     required ActiveZoneService activeZone,
   }) : _mcws = mcws,
        _local = local,

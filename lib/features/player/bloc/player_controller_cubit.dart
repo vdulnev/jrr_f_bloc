@@ -1,8 +1,8 @@
 import '../../library/data/models/tracks.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
+import '../local_playback_service.dart';
 import '../mcws_player_service.dart';
-import 'local_player_cubit.dart';
 import 'player_controller.dart';
 
 /// Routes player commands to either the local or the MCWS controller based
@@ -10,12 +10,12 @@ import 'player_controller.dart';
 /// but lives in `bloc/` because call sites grab it via `context.read`.
 class PlayerControllerCubit implements PlayerController {
   final McwsPlayerService _mcws;
-  final LocalPlayerCubit _local;
+  final LocalPlaybackService _local;
   final ActiveZoneService _activeZone;
 
   PlayerControllerCubit({
     required McwsPlayerService mcws,
-    required LocalPlayerCubit local,
+    required LocalPlaybackService local,
     required ActiveZoneService activeZone,
   }) : _mcws = mcws,
        _local = local,

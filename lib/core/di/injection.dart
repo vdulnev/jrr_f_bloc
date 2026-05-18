@@ -1,7 +1,9 @@
 import 'dart:io' show Platform;
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
@@ -22,10 +24,15 @@ import '../../features/offline/data/repositories/downloads_repository_impl.dart'
 import '../../features/offline/download_jobs_service.dart';
 import '../../features/offline/downloaded_tracks_service.dart';
 import '../../features/offline/services/download_service.dart';
+import '../../features/player/data/models/local_audio_quality.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/player/mcws_player_service.dart';
+import '../../features/player/local_playback_service.dart';
+import '../../features/player/services/android_auto_player_service.dart';
+import '../../features/player/services/jrr_audio_handler.dart';
+import '../../features/player/services/local_player_service.dart';
 import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
@@ -129,8 +136,57 @@ Future<void> configureDependencies() async {
     ActiveZoneService(prefs: prefs, talker: getIt<Talker>()),
   );
 
+  // Session — owns the connection lifecycle. Constructed here so its
+  // silent-reconnect attempt fires at app boot rather than waiting on a
+  // BlocProvider in the widget tree. UI/blocs read it from GetIt.
+  getIt.registerSingleton<SessionService>(
+    SessionService(
+      repository: getIt<ConnectionRepository>(),
+      prefs: prefs,
+      talker: getIt<Talker>(),
+    ),
+  );
+
+  // Audio handlers — phone-side and Android Auto playback engines.
+  final localAudioPlayer = AudioPlayer();
+  final autoAudioPlayer = AudioPlayer();
+
+  LocalAudioQuality resolveQuality() => LocalAudioQuality.fromName(
+    prefs.getString('local_audio_quality'),
+  );
+
+  final localHandler = LocalPlayerService(
+    player: localAudioPlayer,
+    talker: getIt<Talker>(),
+    qualityResolver: resolveQuality,
+  );
+
+  final autoHandler = AndroidAutoPlayerService(
+    player: autoAudioPlayer,
+    talker: getIt<Talker>(),
+    qualityResolver: resolveQuality,
+  );
+
+  final mainHandler = await AudioService.init(
+    builder: () =>
+        JrrAudioHandler(localPlayer: localHandler, autoPlayer: autoHandler),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.jriver.remote.audio',
+      androidNotificationChannelName: 'JRiver Remote playback',
+      androidNotificationIcon: 'drawable/ic_audio_service_notification',
+      androidNotificationOngoing: true,
+    ),
+  );
+
+  await localHandler.init();
+  await autoHandler.init();
+
+  getIt.registerSingleton<LocalPlayerService>(localHandler);
+  getIt.registerSingleton<AndroidAutoPlayerService>(autoHandler);
+  getIt.registerSingleton<JrrAudioHandler>(mainHandler);
+
   // MCWS remote player — owns remote playback polling and commands.
-  // Registered eagerly so polling starts at boot.
+  // Registered eagerly so polling starts at boot. Depends on SessionService.
   getIt.registerSingleton<McwsPlayerService>(
     McwsPlayerService(
       repository: getIt<PlayerRepository>(),
@@ -141,12 +197,14 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Session — owns the connection lifecycle. Constructed here so its
-  // silent-reconnect attempt fires at app boot rather than waiting on a
-  // BlocProvider in the widget tree. UI/blocs read it from GetIt.
-  getIt.registerSingleton<SessionService>(
-    SessionService(
-      repository: getIt<ConnectionRepository>(),
+  // Local player — owns local playback state, persistence, and downloads
+  // listener. Registered eagerly so the per-zone queue restores at boot.
+  getIt.registerSingleton<LocalPlaybackService>(
+    LocalPlaybackService(
+      service: getIt<LocalPlayerService>(),
+      activeZone: getIt<ActiveZoneService>(),
+      queueRepository: getIt<LocalQueueRepository>(),
+      downloadsRepository: getIt<DownloadsRepository>(),
       prefs: prefs,
       talker: getIt<Talker>(),
     ),

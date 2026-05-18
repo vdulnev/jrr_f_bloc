@@ -352,7 +352,7 @@ green.
 - Core player cubits refactored to depend on the service via constructor injection.
 - App lifecycle listener updated to use the service singleton for pause/resume.
 
-### Phase 7 — `LocalPlaybackService` (1.5 days)
+### Phase 7 — `LocalPlaybackService` (1.5 days) — ✅ done
 
 **Goal.** Retire `LocalPlayerCubit`. The most complex conversion —
 queue persistence, downloads-set listener, AA handler swap all move
@@ -360,16 +360,21 @@ behind the service surface.
 
 **Deliverables.**
 - `lib/features/player/local_playback_service.dart`.
-- Subscriptions to `LocalPlayerService` (audio_service handler),
-  `ActiveZoneService`, `DownloadedTracksService` set up in the service
-  constructor.
+- Constructor subscribes to `LocalPlayerService` (audio_service
+  handler), `ActiveZoneService`, `DownloadedTracksService`.
 - `PlayerCubit`, `PlayerControllerCubit`, `QueueCubit` (still a cubit
-  at this point — Phase 9 retires it) updated.
+  at this point — Phase 11 retires it) updated.
 - `bloc/local_player_cubit.dart` deleted.
 
 **Acceptance.** Pick Local zone → resume on relaunch with saved index/
 position. Download a track in queue → URL swaps to file path mid-play.
 AA handler swap on zone pick still works.
+
+**Notes (post-implementation).**
+- `LocalPlaybackService` fully implemented as an eager GetIt singleton.
+- Migrated all complex state management (position, volume, sequence subscriptions) and persistence logic from the retired `LocalPlayerCubit`.
+- Updated core player and queue cubits to resolve the service singleton via GetIt.
+- Verified that all 48 tests pass and the codebase is clean of analyzer issues.
 
 ### Phase 8 — `PlayerService` + companion cubits (1 day)
 
