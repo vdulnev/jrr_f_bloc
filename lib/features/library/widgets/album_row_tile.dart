@@ -80,7 +80,8 @@ class AlbumRowTile extends StatelessWidget {
                     showArtist: showArtist,
                     indent: indent,
                     titleOverride: titleOverride,
-                    onTap: onTap ??
+                    onTap:
+                        onTap ??
                         () => isOffline
                             ? pushDownloadedAlbumDetail(
                                 context,
@@ -94,7 +95,8 @@ class AlbumRowTile extends StatelessWidget {
                     showDownload: !isOffline && activeJobs.isEmpty,
                     showCancel: !isOffline && activeJobs.isNotEmpty,
                     showDelete: downloadedInAlbum.isNotEmpty,
-                    showRetry: !isOffline &&
+                    showRetry:
+                        !isOffline &&
                         failedJobs.isNotEmpty &&
                         activeJobs.isEmpty,
                   );
@@ -321,22 +323,24 @@ class _Row extends StatelessWidget {
 
     Tracks? resolveAlbumTracks() {
       if (isOffline) {
-        final filtered = downloads
-            .where((t) => t.albumGroupId == album.albumGroupId)
-            .map((t) => t.track)
-            .toList()
-          ..sort((a, b) {
-            final discCompare = a.discNumber.compareTo(b.discNumber);
-            if (discCompare != 0) return discCompare;
-            return a.trackNumber.compareTo(b.trackNumber);
-          });
+        final filtered =
+            downloads
+                .where((t) => t.albumGroupId == album.albumGroupId)
+                .map((t) => t.track)
+                .toList()
+              ..sort((a, b) {
+                final discCompare = a.discNumber.compareTo(b.discNumber);
+                if (discCompare != 0) return discCompare;
+                return a.trackNumber.compareTo(b.trackNumber);
+              });
         return Tracks(tracks: filtered);
       }
       return null;
     }
 
     if (action == 'cancelDownload' || action == 'deleteDownload') {
-      final tracks = resolveAlbumTracks() ??
+      final tracks =
+          resolveAlbumTracks() ??
           (await library.getAlbumTracks(album)).match((_) => null, (t) => t);
       if (tracks == null) return;
       final keys = tracks.tracks.map((t) => t.fileKey).toList();
@@ -356,7 +360,8 @@ class _Row extends StatelessWidget {
       return;
     }
 
-    final tracks = resolveAlbumTracks() ??
+    final tracks =
+        resolveAlbumTracks() ??
         (await library.getAlbumTracks(album)).match((_) => null, (t) => t);
     if (tracks == null) return;
     switch (action) {

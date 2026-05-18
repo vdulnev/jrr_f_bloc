@@ -8,11 +8,9 @@ class BrowseChildrenCubit extends Cubit<LibAsync<List<BrowseItem>>> {
   final LibraryRepository _repo;
   final String id;
 
-  BrowseChildrenCubit({
-    required this.id,
-    required LibraryRepository repository,
-  }) : _repo = repository,
-       super(const LibAsync.loading()) {
+  BrowseChildrenCubit({required this.id, required LibraryRepository repository})
+    : _repo = repository,
+      super(const LibAsync.loading()) {
     load();
   }
 

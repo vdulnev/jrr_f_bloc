@@ -35,8 +35,9 @@ List<Widget> _buildChildren(BuildContext context, List<Track> tracks) {
   }
   final sortedDiscs = discs.entries.toList()
     ..sort((a, b) => a.key.compareTo(b.key));
-  final totalDiscs =
-      tracks.map((t) => t.totalDiscs).reduce((a, b) => a > b ? a : b);
+  final totalDiscs = tracks
+      .map((t) => t.totalDiscs)
+      .reduce((a, b) => a > b ? a : b);
 
   return [
     for (final entry in sortedDiscs) ...[

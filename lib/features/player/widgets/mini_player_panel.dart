@@ -45,9 +45,12 @@ class _Body extends StatelessWidget {
     final progress = durationMs > 0
         ? (positionMs / durationMs).clamp(0.0, 1.0)
         : 0.0;
-    final name = status?.name.isNotEmpty == true ? status!.name : 'Unknown Track';
-    final artist =
-        status?.artist.isNotEmpty == true ? status!.artist : 'Unknown Artist';
+    final name = status?.name.isNotEmpty == true
+        ? status!.name
+        : 'Unknown Track';
+    final artist = status?.artist.isNotEmpty == true
+        ? status!.artist
+        : 'Unknown Artist';
     final isPlaying = status?.state == PlaybackState.playing;
 
     return GestureDetector(
@@ -89,7 +92,10 @@ class _Body extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(7),
-                        child: ArtworkWidget(fileKey: status?.fileKey, size: 40),
+                        child: ArtworkWidget(
+                          fileKey: status?.fileKey,
+                          size: 40,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

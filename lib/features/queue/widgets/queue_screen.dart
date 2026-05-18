@@ -32,20 +32,21 @@ class QueueScreen extends StatelessWidget {
               tracks: tracks,
               onClearTap: () => _confirmClear(context),
             ),
-            QueueLoaded(:final tracks) => BlocSelector<PlayerCubit, PlayerSnapshot, int>(
-              selector: (snap) => switch (snap) {
-                PlayerData(:final status) => status?.playingNowPosition ?? -1,
-                _ => -1,
-              },
-              builder: (context, currentIndex) => _DataView(
-                items: tracks,
-                currentIndex: currentIndex,
-                onTap: (i) =>
-                    context.read<PlayerControllerCubit>().playByIndex(i),
-                onRemove: (i) => context.read<QueueCubit>().removeItem(i),
-                onClearTap: () => _confirmClear(context),
+            QueueLoaded(:final tracks) =>
+              BlocSelector<PlayerCubit, PlayerSnapshot, int>(
+                selector: (snap) => switch (snap) {
+                  PlayerData(:final status) => status?.playingNowPosition ?? -1,
+                  _ => -1,
+                },
+                builder: (context, currentIndex) => _DataView(
+                  items: tracks,
+                  currentIndex: currentIndex,
+                  onTap: (i) =>
+                      context.read<PlayerControllerCubit>().playByIndex(i),
+                  onRemove: (i) => context.read<QueueCubit>().removeItem(i),
+                  onClearTap: () => _confirmClear(context),
+                ),
               ),
-            ),
           },
         ),
       ),

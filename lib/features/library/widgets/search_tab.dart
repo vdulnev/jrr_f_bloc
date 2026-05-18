@@ -66,9 +66,7 @@ class _SearchTabState extends State<SearchTab> {
               LibError<Tracks>(:final error) => ErrorView(error: error),
               LibData<Tracks>(:final value) when value.isEmpty => Center(
                 child: Text(
-                  _controller.text.isEmpty
-                      ? 'Type to search'
-                      : 'No matches',
+                  _controller.text.isEmpty ? 'Type to search' : 'No matches',
                   style: AppTextStyles.emptyState,
                 ),
               ),

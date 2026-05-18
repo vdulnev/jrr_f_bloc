@@ -63,9 +63,8 @@ class ZoneListScreen extends StatelessWidget {
                             return ZoneTile(
                               zone: zone,
                               isActive: active?.id == zone.id,
-                              onTap: () => context
-                                  .read<ActiveZoneCubit>()
-                                  .setZone(zone),
+                              onTap: () =>
+                                  context.read<ActiveZoneCubit>().setZone(zone),
                             );
                           },
                         );

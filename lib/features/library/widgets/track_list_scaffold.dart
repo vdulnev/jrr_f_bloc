@@ -56,12 +56,15 @@ class TrackListScaffold extends StatelessWidget {
             Expanded(
               child: switch (tracksState) {
                 LibLoading<Tracks>() => const LoadingView(),
-                LibError<Tracks>(:final error) =>
-                  ErrorView(error: error, onRetry: onRetry),
-                LibData<Tracks>(:final value) => value.isEmpty
-                    ? (emptyState ??
-                        const Center(child: Text('No tracks found')))
-                    : _ContentList(tracks: value),
+                LibError<Tracks>(:final error) => ErrorView(
+                  error: error,
+                  onRetry: onRetry,
+                ),
+                LibData<Tracks>(:final value) =>
+                  value.isEmpty
+                      ? (emptyState ??
+                            const Center(child: Text('No tracks found')))
+                      : _ContentList(tracks: value),
               },
             ),
           ],
@@ -77,8 +80,9 @@ class _ContentList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMultiDisc =
-        tracks.tracks.any((t) => t.totalDiscs > 1 || t.discNumber > 1);
+    final isMultiDisc = tracks.tracks.any(
+      (t) => t.totalDiscs > 1 || t.discNumber > 1,
+    );
     return CustomScrollView(
       slivers: [
         if (isMultiDisc)
@@ -88,8 +92,9 @@ class _ContentList extends StatelessWidget {
             itemCount: tracks.length,
             itemBuilder: (_, i) => LibraryItemTile(
               item: tracks[i],
-              trackNumber:
-                  tracks[i].trackNumber > 0 ? tracks[i].trackNumber : i + 1,
+              trackNumber: tracks[i].trackNumber > 0
+                  ? tracks[i].trackNumber
+                  : i + 1,
               collapsedByDefault: true,
             ),
           ),

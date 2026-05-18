@@ -31,7 +31,10 @@ class _AlbumListViewState extends State<AlbumListView> {
       itemBuilder: (_, i) {
         final group = widget.groups[i];
         if (!group.isMultiDisc) {
-          return AlbumRowTile(album: group.album, showArtist: widget.showArtist);
+          return AlbumRowTile(
+            album: group.album,
+            showArtist: widget.showArtist,
+          );
         }
         final key = _keyFor(group);
         final expanded = _expanded.contains(key);

@@ -56,22 +56,24 @@ class TracksPopupMenu extends StatelessWidget {
       return const SizedBox(width: 18);
     }
 
-    final jobsForTracks =
-        jobs.where((j) => trackKeys.contains(j.fileKey)).toList();
+    final jobsForTracks = jobs
+        .where((j) => trackKeys.contains(j.fileKey))
+        .toList();
     final activeJobs = jobsForTracks.where(
       (j) =>
           j.state == DownloadState.queued || j.state == DownloadState.running,
     );
-    final failedJobs =
-        jobsForTracks.where((j) => j.state == DownloadState.failed);
+    final failedJobs = jobsForTracks.where(
+      (j) => j.state == DownloadState.failed,
+    );
 
-    final showDownload = !isOffline &&
+    final showDownload =
+        !isOffline &&
         downloadedKeys.length < tracks.length &&
         activeJobs.isEmpty;
     final showCancel = !isOffline && activeJobs.isNotEmpty;
     final showDelete = downloadedKeys.isNotEmpty;
-    final showRetry =
-        !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
+    final showRetry = !isOffline && failedJobs.isNotEmpty && activeJobs.isEmpty;
 
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 18, color: AppColors.text3),

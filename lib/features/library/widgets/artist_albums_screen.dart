@@ -58,9 +58,13 @@ class _Body extends StatelessWidget {
           onRetry: () => context.read<ArtistAlbumsCubit>().load(),
         ),
         LibData<List<AlbumGroup>>(:final value) when value.isEmpty =>
-          const Center(child: Text('No albums', style: AppTextStyles.emptyState)),
-        LibData<List<AlbumGroup>>(:final value) =>
-          AlbumListView(groups: value, showArtist: false),
+          const Center(
+            child: Text('No albums', style: AppTextStyles.emptyState),
+          ),
+        LibData<List<AlbumGroup>>(:final value) => AlbumListView(
+          groups: value,
+          showArtist: false,
+        ),
       },
     );
   }

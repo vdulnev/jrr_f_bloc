@@ -31,8 +31,9 @@ class DownloadStatus {
     required String albumGroupId,
     required List<DownloadJob> jobs,
   }) {
-    final albumJobs =
-        jobs.where((j) => j.track.albumGroupId == albumGroupId).toList();
+    final albumJobs = jobs
+        .where((j) => j.track.albumGroupId == albumGroupId)
+        .toList();
     if (albumJobs.isEmpty) return DownloadState.notDownloaded;
     if (albumJobs.any((j) => j.state == DownloadState.running)) {
       return DownloadState.running;
@@ -50,8 +51,9 @@ class DownloadStatus {
     required String albumGroupId,
     required List<DownloadJob> jobs,
   }) {
-    final albumJobs =
-        jobs.where((j) => j.track.albumGroupId == albumGroupId).toList();
+    final albumJobs = jobs
+        .where((j) => j.track.albumGroupId == albumGroupId)
+        .toList();
     if (albumJobs.isEmpty) return 0;
 
     var totalBytesDone = 0;

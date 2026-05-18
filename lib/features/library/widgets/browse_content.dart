@@ -35,11 +35,12 @@ class BrowseContent extends StatelessWidget {
             error: error,
             onRetry: () => context.read<BrowseChildrenCubit>().load(),
           ),
-          LibData<List<BrowseItem>>(:final value) => value.isEmpty
-              // No children — treat current node as a leaf and render its
-              // files.
-              ? BrowseFilesScreen(id: current.id, name: current.name)
-              : _Children(items: value, parent: current),
+          LibData<List<BrowseItem>>(:final value) =>
+            value.isEmpty
+                // No children — treat current node as a leaf and render its
+                // files.
+                ? BrowseFilesScreen(id: current.id, name: current.name)
+                : _Children(items: value, parent: current),
         },
       ),
     );

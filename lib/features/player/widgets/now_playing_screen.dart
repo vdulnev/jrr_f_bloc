@@ -53,8 +53,9 @@ class NowPlayingScreen extends StatelessWidget {
               _ => null,
             };
             final fileKey = status?.fileKey ?? -1;
-            if (fileKey < 0) return _EmptyState(zone: activeZone, status: status);
-
+            if (fileKey < 0) {
+              return _EmptyState(zone: activeZone, status: status);
+            }
             return _NowPlayingBody(zone: activeZone, status: status!);
           },
         );
@@ -194,7 +195,10 @@ class _NowPlayingBody extends StatelessWidget {
                       TransportButton(
                         size: 44,
                         onPressed: controller.previous,
-                        child: const Icon(Icons.skip_previous_rounded, size: 28),
+                        child: const Icon(
+                          Icons.skip_previous_rounded,
+                          size: 28,
+                        ),
                       ),
                       TransportButton(
                         size: 60,

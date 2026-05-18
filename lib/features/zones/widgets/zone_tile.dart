@@ -41,7 +41,11 @@ class ZoneTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
-              child: Icon(_iconFor(zone), size: 20, color: _iconColor(isActive)),
+              child: Icon(
+                _iconFor(zone),
+                size: 20,
+                color: _iconColor(isActive),
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -51,9 +55,7 @@ class ZoneTile extends StatelessWidget {
                   Text(
                     zone.name,
                     style: AppTextStyles.itemTitle.copyWith(
-                      fontWeight: isActive
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

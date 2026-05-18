@@ -67,8 +67,7 @@ class ServerManagerScreen extends StatelessWidget {
                       const _DiagnosticsSection(),
                       const SizedBox(height: 32),
                       FilledButton.icon(
-                        onPressed: () =>
-                            context.read<SessionCubit>().logout(),
+                        onPressed: () => context.read<SessionCubit>().logout(),
                         icon: Icon(
                           serverInfo.id == 'offline'
                               ? Icons.login_rounded
@@ -161,7 +160,10 @@ class _StorageSection extends StatelessWidget {
     return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
       builder: (context, tracks) {
         final count = tracks.length;
-        final totalBytes = tracks.fold<int>(0, (sum, t) => sum + t.fileSizeBytes);
+        final totalBytes = tracks.fold<int>(
+          0,
+          (sum, t) => sum + t.fileSizeBytes,
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -176,13 +178,18 @@ class _StorageSection extends StatelessWidget {
               child: Column(
                 children: [
                   _InfoRow(label: 'Downloaded Tracks', value: '$count'),
-                  _InfoRow(label: 'Total Size', value: _formatBytes(totalBytes)),
+                  _InfoRow(
+                    label: 'Total Size',
+                    value: _formatBytes(totalBytes),
+                  ),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: count > 0 ? () => _confirmClear(context) : null,
+                        onPressed: count > 0
+                            ? () => _confirmClear(context)
+                            : null,
                         icon: const Icon(Icons.delete_sweep_outlined, size: 18),
                         label: const Text('Clear All Downloads'),
                         style: OutlinedButton.styleFrom(
@@ -250,8 +257,9 @@ class _FailedDownloadsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
       builder: (context, jobs) {
-        final failed =
-            jobs.where((j) => j.state == DownloadState.failed).toList();
+        final failed = jobs
+            .where((j) => j.state == DownloadState.failed)
+            .toList();
         if (failed.isEmpty) return const SizedBox.shrink();
         final repo = getIt<DownloadsRepository>();
         return Column(

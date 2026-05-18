@@ -54,9 +54,7 @@ class RandomTab extends StatelessWidget {
             ),
             Expanded(
               child: AlbumListView(
-                groups: [
-                  for (final a in value.albums) AlbumGroup(album: a),
-                ],
+                groups: [for (final a in value.albums) AlbumGroup(album: a)],
               ),
             ),
           ],

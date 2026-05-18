@@ -10,8 +10,7 @@ enum BrowseScope { browse, favorites }
 class BrowseNavigationCubit extends Cubit<List<BrowseItem>> {
   final BrowseScope scope;
 
-  BrowseNavigationCubit({required this.scope})
-    : super(_initial(scope));
+  BrowseNavigationCubit({required this.scope}) : super(_initial(scope));
 
   static List<BrowseItem> _initial(BrowseScope scope) => switch (scope) {
     BrowseScope.browse => const [BrowseItem(id: '-1', name: 'Browse')],

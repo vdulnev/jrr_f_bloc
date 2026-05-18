@@ -55,7 +55,10 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
   Zone? get _zone => _activeZone.state;
 
   bool get _isRemoteZone =>
-      _zone != null && !_zone!.isLocal && !_zone!.isOffline && !_zone!.isAndroidAuto;
+      _zone != null &&
+      !_zone!.isLocal &&
+      !_zone!.isOffline &&
+      !_zone!.isAndroidAuto;
 
   void _onZoneChanged(Zone? zone) {
     if (zone == null || !_isRemoteZone) {
@@ -81,7 +84,8 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
 
   void _scheduleNext() {
     _timer?.cancel();
-    final interval = state is PlayerData &&
+    final interval =
+        state is PlayerData &&
             (state as PlayerData).status?.state == PlaybackState.playing
         ? const Duration(seconds: 1)
         : const Duration(seconds: 5);
@@ -116,13 +120,10 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
     final zone = _zone;
     if (zone == null || !_isRemoteZone) return;
     final result = await _repo.getPlaybackInfo(zone.id);
-    result.fold(
-      (e) {
-        _talker.warning('[McwsPlayerBloc] getPlaybackInfo failed: $e');
-        emit(PlayerSnapshot.error(error: e));
-      },
-      (status) => emit(PlayerSnapshot.data(status: status)),
-    );
+    result.fold((e) {
+      _talker.warning('[McwsPlayerBloc] getPlaybackInfo failed: $e');
+      emit(PlayerSnapshot.error(error: e));
+    }, (status) => emit(PlayerSnapshot.data(status: status)));
   }
 
   @override
@@ -156,8 +157,9 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
   @override
   Future<void> toggleShuffle() async {
     final current = _data?.status?.shuffleMode ?? ShuffleMode.off;
-    final nextMode =
-        current == ShuffleMode.off ? ShuffleMode.on : ShuffleMode.off;
+    final nextMode = current == ShuffleMode.off
+        ? ShuffleMode.on
+        : ShuffleMode.off;
     await _runZone((id) => _repo.setShuffle(id, nextMode));
   }
 
@@ -188,7 +190,8 @@ class McwsPlayerBloc extends Cubit<PlayerSnapshot> implements PlayerController {
 
   @override
   Future<void> addToQueue(Tracks tracks) => _runZone(
-    (id) => _library.addToQueue(id, tracks.tracks.map((t) => t.fileKey).toList()),
+    (id) =>
+        _library.addToQueue(id, tracks.tracks.map((t) => t.fileKey).toList()),
   );
 
   // ---- Helpers -------------------------------------------------------------

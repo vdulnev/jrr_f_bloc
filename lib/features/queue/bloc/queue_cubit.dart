@@ -89,10 +89,8 @@ class QueueCubit extends Cubit<QueueState> {
   }
 
   void _emitLocal(SequenceState? seq) {
-    final tracks = seq?.sequence
-            .map((src) => src.tag)
-            .whereType<Track>()
-            .toList() ??
+    final tracks =
+        seq?.sequence.map((src) => src.tag).whereType<Track>().toList() ??
         const <Track>[];
     emit(QueueState.loaded(tracks: Tracks(tracks: tracks)));
   }
@@ -101,13 +99,10 @@ class QueueCubit extends Cubit<QueueState> {
     final zone = _activeZone.state;
     if (zone == null || _isLocalLike) return;
     final result = await _repo.getQueue(zone.id);
-    result.fold(
-      (e) {
-        _talker.warning('[QueueCubit] getQueue failed: $e');
-        emit(QueueState.error(error: e));
-      },
-      (tracks) => emit(QueueState.loaded(tracks: tracks)),
-    );
+    result.fold((e) {
+      _talker.warning('[QueueCubit] getQueue failed: $e');
+      emit(QueueState.error(error: e));
+    }, (tracks) => emit(QueueState.loaded(tracks: tracks)));
   }
 
   /// Force a refresh — useful after a command that doesn't bump the

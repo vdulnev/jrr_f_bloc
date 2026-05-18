@@ -42,11 +42,15 @@ class _BrowseScaffold extends StatelessWidget {
             children: [
               BrowseBreadcrumb(
                 stack: stack,
-                onTap: (i) =>
-                    context.read<BrowseNavigationCubit>().navigateToBreadcrumb(i),
+                onTap: (i) => context
+                    .read<BrowseNavigationCubit>()
+                    .navigateToBreadcrumb(i),
               ),
               Expanded(
-                child: BrowseContent(key: ValueKey(current.id), current: current),
+                child: BrowseContent(
+                  key: ValueKey(current.id),
+                  current: current,
+                ),
               ),
             ],
           ),

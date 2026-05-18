@@ -111,8 +111,7 @@ class _LibraryItemTileState extends State<LibraryItemTile> {
                           downloaded: downloaded,
                           jobs: jobs,
                         );
-                        if (isOffline &&
-                            status != DownloadState.downloaded) {
+                        if (isOffline && status != DownloadState.downloaded) {
                           return const SizedBox(width: 18);
                         }
                         return _Menu(

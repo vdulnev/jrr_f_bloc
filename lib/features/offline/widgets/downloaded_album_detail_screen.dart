@@ -10,15 +10,16 @@ import '../bloc/downloaded_tracks_cubit.dart';
 import '../data/models/downloaded_track.dart';
 
 Tracks _tracksForGroup(List<DownloadedTrack> all, String albumGroupId) {
-  final filtered = all
-      .where((t) => t.albumGroupId == albumGroupId)
-      .map((t) => t.track)
-      .toList()
-    ..sort((a, b) {
-      final discCompare = a.discNumber.compareTo(b.discNumber);
-      if (discCompare != 0) return discCompare;
-      return a.trackNumber.compareTo(b.trackNumber);
-    });
+  final filtered =
+      all
+          .where((t) => t.albumGroupId == albumGroupId)
+          .map((t) => t.track)
+          .toList()
+        ..sort((a, b) {
+          final discCompare = a.discNumber.compareTo(b.discNumber);
+          if (discCompare != 0) return discCompare;
+          return a.trackNumber.compareTo(b.trackNumber);
+        });
   return Tracks(tracks: filtered);
 }
 

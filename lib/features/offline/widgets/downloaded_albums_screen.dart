@@ -14,8 +14,7 @@ import 'downloaded_navigation.dart';
 List<Album> _albumsForArtist(List<DownloadedTrack> all, String artist) {
   final groups = <String, Album>{};
   for (final t in all) {
-    final tArtist =
-        t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;
+    final tArtist = t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;
     if (!tArtist.equalsIgnoreCase(artist)) continue;
     groups.putIfAbsent(t.albumGroupId, () => Album.fromTrack(t.track));
   }
