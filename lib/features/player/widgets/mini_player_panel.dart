@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
 import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
+import '../bloc/mini_player_cubit.dart';
 import '../bloc/player_controller_cubit.dart';
-import '../bloc/player_cubit.dart';
-import '../bloc/player_state.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
+import '../player_service.dart';
 
 class MiniPlayerPanel extends StatelessWidget {
   final VoidCallback? onItemTap;
@@ -18,14 +19,13 @@ class MiniPlayerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PlayerCubit, PlayerSnapshot>(
-      builder: (context, snap) {
-        final status = switch (snap) {
-          PlayerData(:final status) => status,
-          _ => null,
-        };
-        return _Body(status: status, onItemTap: onItemTap);
-      },
+    return BlocProvider<MiniPlayerCubit>(
+      create: (_) => MiniPlayerCubit(player: getIt<PlayerService>()),
+      child: BlocBuilder<MiniPlayerCubit, MiniPlayerState>(
+        builder: (context, state) {
+          return _Body(status: state.status, onItemTap: onItemTap);
+        },
+      ),
     );
   }
 }

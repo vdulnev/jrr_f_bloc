@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -9,65 +10,46 @@ import '../../../shared/widgets/transport_button.dart';
 import '../../../shared/widgets/volume_slider.dart';
 import '../../library/data/models/track.dart';
 import '../../library/track_lookup_service.dart';
-import '../../../core/di/injection.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
+import '../bloc/now_playing_cubit.dart';
+import '../bloc/now_playing_state.dart';
 import '../bloc/player_controller_cubit.dart';
-import '../bloc/player_cubit.dart';
-import '../bloc/player_state.dart';
 import '../data/models/playback_state.dart';
 import '../data/models/player_status.dart';
 import '../data/models/repeat_mode.dart';
 import '../data/models/shuffle_mode.dart';
+import '../player_service.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final service = getIt<ActiveZoneService>();
-    // NOTE: NowPlayingScreen still violates rule 1 (PlayerCubit +
-    // PlayerControllerCubit + active-zone read + track-lookup read).
-    // Phase 8 of REFACTOR_PLAN folds all of these into NowPlayingCubit.
-    return StreamBuilder<Zone?>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final activeZone = snap.data ?? service.state;
-        if (activeZone == null) return const Scaffold(body: LoadingView());
-
-        return BlocConsumer<PlayerCubit, PlayerSnapshot>(
-          listenWhen: (a, b) {
-            final aKey = switch (a) {
-              PlayerData(:final status) => status?.fileKey ?? -1,
-              _ => -1,
-            };
-            final bKey = switch (b) {
-              PlayerData(:final status) => status?.fileKey ?? -1,
-              _ => -1,
-            };
-            return aKey != bKey;
-          },
-          listener: (context, snap) {
-            final key = switch (snap) {
-              PlayerData(:final status) => status?.fileKey ?? -1,
-              _ => -1,
-            };
-            getIt<TrackLookupService>().lookup(key);
-          },
-          builder: (context, snap) {
-            final status = switch (snap) {
-              PlayerData(:final status) => status,
-              _ => null,
-            };
-            final fileKey = status?.fileKey ?? -1;
-            if (fileKey < 0) {
-              return _EmptyState(zone: activeZone, status: status);
-            }
-            return _NowPlayingBody(zone: activeZone, status: status!);
-          },
-        );
-      },
+    return BlocProvider<NowPlayingCubit>(
+      create: (_) => NowPlayingCubit(
+        activeZone: getIt<ActiveZoneService>(),
+        player: getIt<PlayerService>(),
+        lookup: getIt<TrackLookupService>(),
+      ),
+      child: BlocBuilder<NowPlayingCubit, NowPlayingState>(
+        builder: (context, state) {
+          return state.map(
+            loading: (_) => const Scaffold(body: LoadingView()),
+            data: (d) {
+              final fileKey = d.status?.fileKey ?? -1;
+              if (fileKey < 0) {
+                return _EmptyState(zone: d.zone, status: d.status);
+              }
+              return _NowPlayingBody(
+                zone: d.zone,
+                status: d.status!,
+                track: d.track,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -75,8 +57,13 @@ class NowPlayingScreen extends StatelessWidget {
 class _NowPlayingBody extends StatelessWidget {
   final Zone zone;
   final PlayerStatus status;
+  final Track? track;
 
-  const _NowPlayingBody({required this.zone, required this.status});
+  const _NowPlayingBody({
+    required this.zone,
+    required this.status,
+    required this.track,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,28 +81,19 @@ class _NowPlayingBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        final lookup = getIt<TrackLookupService>();
-                        return StreamBuilder<Track?>(
-                          stream: lookup.stream,
-                          initialData: lookup.state,
-                          builder: (context, snap) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'NOW PLAYING',
-                                style: AppTextStyles.sectionLabel,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatHeader(zone.name, status, snap.data),
-                                style: AppTextStyles.itemSubtitle,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'NOW PLAYING',
+                          style: AppTextStyles.sectionLabel,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatHeader(zone.name, status, track),
+                          style: AppTextStyles.itemSubtitle,
+                        ),
+                      ],
                     ),
                   ),
                   if (status.playingNowTracks > 0)

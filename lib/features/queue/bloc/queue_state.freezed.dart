@@ -122,11 +122,11 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( Tracks tracks)?  loaded,TResult Function( AppException error)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( Tracks tracks,  int currentIndex)?  loaded,TResult Function( AppException error)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case QueueLoading() when loading != null:
 return loading();case QueueLoaded() when loaded != null:
-return loaded(_that.tracks);case QueueError() when error != null:
+return loaded(_that.tracks,_that.currentIndex);case QueueError() when error != null:
 return error(_that.error);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return error(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( Tracks tracks)  loaded,required TResult Function( AppException error)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( Tracks tracks,  int currentIndex)  loaded,required TResult Function( AppException error)  error,}) {final _that = this;
 switch (_that) {
 case QueueLoading():
 return loading();case QueueLoaded():
-return loaded(_that.tracks);case QueueError():
+return loaded(_that.tracks,_that.currentIndex);case QueueError():
 return error(_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return error(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( Tracks tracks)?  loaded,TResult? Function( AppException error)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( Tracks tracks,  int currentIndex)?  loaded,TResult? Function( AppException error)?  error,}) {final _that = this;
 switch (_that) {
 case QueueLoading() when loading != null:
 return loading();case QueueLoaded() when loaded != null:
-return loaded(_that.tracks);case QueueError() when error != null:
+return loaded(_that.tracks,_that.currentIndex);case QueueError() when error != null:
 return error(_that.error);case _:
   return null;
 
@@ -213,10 +213,11 @@ String toString() {
 
 
 class QueueLoaded implements QueueState {
-  const QueueLoaded({required this.tracks});
+  const QueueLoaded({required this.tracks, required this.currentIndex});
   
 
  final  Tracks tracks;
+ final  int currentIndex;
 
 /// Create a copy of QueueState
 /// with the given fields replaced by the non-null parameter values.
@@ -228,16 +229,16 @@ $QueueLoadedCopyWith<QueueLoaded> get copyWith => _$QueueLoadedCopyWithImpl<Queu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueueLoaded&&(identical(other.tracks, tracks) || other.tracks == tracks));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueueLoaded&&(identical(other.tracks, tracks) || other.tracks == tracks)&&(identical(other.currentIndex, currentIndex) || other.currentIndex == currentIndex));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,tracks);
+int get hashCode => Object.hash(runtimeType,tracks,currentIndex);
 
 @override
 String toString() {
-  return 'QueueState.loaded(tracks: $tracks)';
+  return 'QueueState.loaded(tracks: $tracks, currentIndex: $currentIndex)';
 }
 
 
@@ -248,7 +249,7 @@ abstract mixin class $QueueLoadedCopyWith<$Res> implements $QueueStateCopyWith<$
   factory $QueueLoadedCopyWith(QueueLoaded value, $Res Function(QueueLoaded) _then) = _$QueueLoadedCopyWithImpl;
 @useResult
 $Res call({
- Tracks tracks
+ Tracks tracks, int currentIndex
 });
 
 
@@ -265,10 +266,11 @@ class _$QueueLoadedCopyWithImpl<$Res>
 
 /// Create a copy of QueueState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? tracks = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? tracks = null,Object? currentIndex = null,}) {
   return _then(QueueLoaded(
 tracks: null == tracks ? _self.tracks : tracks // ignore: cast_nullable_to_non_nullable
-as Tracks,
+as Tracks,currentIndex: null == currentIndex ? _self.currentIndex : currentIndex // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

@@ -13,9 +13,9 @@ import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/bloc/player_controller_cubit.dart';
-import 'features/player/bloc/player_cubit.dart';
 import 'features/player/local_playback_service.dart';
 import 'features/player/mcws_player_service.dart';
+import 'features/player/player_service.dart';
 import 'features/player/services/local_player_service.dart';
 import 'features/queue/bloc/queue_cubit.dart';
 import 'features/queue/data/repositories/queue_repository.dart';
@@ -69,15 +69,6 @@ class _AppState extends State<App> {
         BlocProvider<LocalAudioQualityCubit>(
           create: (_) => LocalAudioQualityCubit(prefs: getIt()),
         ),
-        // PlayerCubit forwards snapshots from MCWS / Local based on zone.
-        BlocProvider<PlayerCubit>(
-          lazy: false,
-          create: (ctx) => PlayerCubit(
-            mcws: getIt<McwsPlayerService>(),
-            local: getIt<LocalPlaybackService>(),
-            activeZone: getIt<ActiveZoneService>(),
-          ),
-        ),
         // QueueCubit watches the playing-now change counter; eager so
         // the queue is current the moment the user opens the tab.
         BlocProvider<QueueCubit>(
@@ -87,7 +78,7 @@ class _AppState extends State<App> {
             service: getIt<LocalPlayerService>(),
             localPlayer: getIt<LocalPlaybackService>(),
             activeZone: getIt<ActiveZoneService>(),
-            player: ctx.read<PlayerCubit>(),
+            player: getIt<PlayerService>(),
             talker: getIt(),
           ),
         ),

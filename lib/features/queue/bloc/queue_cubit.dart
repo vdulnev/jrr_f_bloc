@@ -6,9 +6,9 @@ import 'package:talker/talker.dart';
 
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
-import '../../player/bloc/player_cubit.dart';
 import '../../player/bloc/player_state.dart';
 import '../../player/local_playback_service.dart';
+import '../../player/player_service.dart';
 import '../../player/services/local_player_service.dart';
 import '../../zones/active_zone_service.dart';
 import '../../zones/data/models/zone.dart';
@@ -17,7 +17,7 @@ import 'queue_state.dart';
 
 /// Tracks the Playing Now queue for the active zone.
 ///
-/// MCWS branch: refreshes whenever [PlayerCubit]'s
+/// MCWS branch: refreshes whenever [PlayerService]'s
 /// `playingNowChangeCounter` changes (spec §5.2).
 /// Local branch: subscribes to [LocalPlayerService.sequenceStateStream]
 /// and translates IndexedAudioSource tags into Tracks.
@@ -26,7 +26,7 @@ class QueueCubit extends Cubit<QueueState> {
   final LocalPlayerService _service;
   final LocalPlaybackService _localPlayer;
   final ActiveZoneService _activeZone;
-  final PlayerCubit _player;
+  final PlayerService _player;
   final Talker _talker;
 
   StreamSubscription<Zone?>? _zoneSub;
@@ -40,7 +40,7 @@ class QueueCubit extends Cubit<QueueState> {
     required LocalPlayerService service,
     required LocalPlaybackService localPlayer,
     required ActiveZoneService activeZone,
-    required PlayerCubit player,
+    required PlayerService player,
     required Talker talker,
   }) : _repo = repository,
        _service = service,
@@ -63,21 +63,31 @@ class QueueCubit extends Cubit<QueueState> {
   }
 
   void _onPlayerSnapshot(PlayerSnapshot snap) {
-    if (_isLocalLike) return; // Local path comes from the sequence stream.
-    final counter = switch (snap) {
-      PlayerData(:final status) => status?.playingNowChangeCounter ?? 0,
-      _ => _lastChangeCounter,
-    };
-    if (counter != _lastChangeCounter) {
+    final status = snap.mapOrNull(data: (d) => d.status);
+    final counter = status?.playingNowChangeCounter ?? 0;
+    
+    if (!_isLocalLike && counter != _lastChangeCounter) {
       _lastChangeCounter = counter;
       _refreshRemote();
+    } else {
+      // Even if the counter didn't change (or we're local), the index might have.
+      _updateIndex(status?.playingNowPosition ?? -1);
+    }
+  }
+
+  void _updateIndex(int index) {
+    if (state is QueueLoaded) {
+      final s = state as QueueLoaded;
+      if (s.currentIndex != index) {
+        emit(s.copyWith(currentIndex: index));
+      }
     }
   }
 
   void _onAnyChange() {
     final zone = _activeZone.state;
     if (zone == null) {
-      emit(const QueueState.loaded(tracks: Tracks.empty));
+      emit(const QueueState.loaded(tracks: Tracks.empty, currentIndex: -1));
       return;
     }
     if (_isLocalLike) {
@@ -92,17 +102,28 @@ class QueueCubit extends Cubit<QueueState> {
     final tracks =
         seq?.sequence.map((src) => src.tag).whereType<Track>().toList() ??
         const <Track>[];
-    emit(QueueState.loaded(tracks: Tracks(tracks: tracks)));
+    emit(
+      QueueState.loaded(
+        tracks: Tracks(tracks: tracks),
+        currentIndex: seq?.currentIndex ?? -1,
+      ),
+    );
   }
 
   Future<void> _refreshRemote() async {
     final zone = _activeZone.state;
     if (zone == null || _isLocalLike) return;
     final result = await _repo.getQueue(zone.id);
+    final status = _player.state.mapOrNull(data: (d) => d.status);
     result.fold((e) {
       _talker.warning('[QueueCubit] getQueue failed: $e');
       emit(QueueState.error(error: e));
-    }, (tracks) => emit(QueueState.loaded(tracks: tracks)));
+    }, (tracks) => emit(
+      QueueState.loaded(
+        tracks: tracks,
+        currentIndex: status?.playingNowPosition ?? -1,
+      ),
+    ));
   }
 
   /// Force a refresh — useful after a command that doesn't bump the

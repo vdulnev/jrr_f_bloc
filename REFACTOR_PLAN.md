@@ -376,7 +376,7 @@ AA handler swap on zone pick still works.
 - Updated core player and queue cubits to resolve the service singleton via GetIt.
 - Verified that all 48 tests pass and the codebase is clean of analyzer issues.
 
-### Phase 8 — `PlayerService` + companion cubits (1 day)
+### Phase 8 — `PlayerService` + companion cubits (1 day) — ✅ done
 
 **Goal.** Retire `PlayerCubit` facade. Add companion cubits for the two
 widgets that consumed it.
@@ -396,6 +396,20 @@ widgets that consumed it.
 **Acceptance.** Now Playing tab renders end-to-end with one cubit per
 widget. Mini-player updates as track changes. Library tabs collapse
 to Downloads-only when Offline. Rule 1 satisfied across the player UI.
+
+**Notes (post-implementation).**
+- `PlayerService` is the GetIt-registered facade that forwards the
+  active zone's player snapshot (MCWS or Local) on a single stream.
+- `NowPlayingCubit` aggregates `PlayerService` + `ActiveZoneService` +
+  `TrackLookupService` enrichment into one immutable `NowPlayingState`.
+- `MiniPlayerCubit` reads `PlayerService` directly.
+- `LibraryCubit` ↔ `LibraryScreen` reads `ActiveZoneService` for
+  `isOffline` and owns the active tab index. `LibraryState` is a
+  plain immutable class (not Freezed) — only two fields.
+- `bloc/player_cubit.dart` removed; `player_state.dart` kept as the
+  shared snapshot type used by the player services and companion
+  cubits.
+- `flutter analyze` clean. All 48 tests pass.
 
 ### Phase 9 — `PlayerCommandService` (½ day)
 
@@ -468,11 +482,11 @@ input methods. Every cubit pairs to exactly one widget by name.
 | 1     | TrackLookupService ✅                              | ½ day    |
 | 2     | FavoritesService ✅                                | ½ day    |
 | 3     | Download stream services ✅                        | ½ day    |
-| 4     | Download-aware tile / indicator companion cubits   | 1 day    |
-| 5     | Downloaded screen companion cubits                 | ½ day    |
-| 6     | McwsPlayerService                                  | 1 day    |
-| 7     | LocalPlaybackService                               | 1.5 days |
-| 8     | PlayerService + companion cubits                   | 1 day    |
+| 4     | Download-aware tile / indicator companion cubits ✅ | 1 day    |
+| 5     | Downloaded screen companion cubits ✅              | ½ day    |
+| 6     | McwsPlayerService ✅                               | 1 day    |
+| 7     | LocalPlaybackService ✅                            | 1.5 days |
+| 8     | PlayerService + companion cubits ✅                | 1 day    |
 | 9     | PlayerCommandService                               | ½ day    |
 | 10    | ZonesService                                       | ½ day    |
 | 11    | QueueService + companion cubit                     | 1 day    |

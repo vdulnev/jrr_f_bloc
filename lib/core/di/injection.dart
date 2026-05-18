@@ -30,6 +30,7 @@ import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
 import '../../features/player/mcws_player_service.dart';
 import '../../features/player/local_playback_service.dart';
+import '../../features/player/player_service.dart';
 import '../../features/player/services/android_auto_player_service.dart';
 import '../../features/player/services/jrr_audio_handler.dart';
 import '../../features/player/services/local_player_service.dart';
@@ -207,6 +208,15 @@ Future<void> configureDependencies() async {
       downloadsRepository: getIt<DownloadsRepository>(),
       prefs: prefs,
       talker: getIt<Talker>(),
+    ),
+  );
+
+  // Player facade — routes snapshots from MCWS / Local based on active zone.
+  getIt.registerSingleton<PlayerService>(
+    PlayerService(
+      mcws: getIt<McwsPlayerService>(),
+      local: getIt<LocalPlaybackService>(),
+      activeZone: getIt<ActiveZoneService>(),
     ),
   );
 

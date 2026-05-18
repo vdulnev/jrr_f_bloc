@@ -8,8 +8,6 @@ import '../../../shared/widgets/vu_meter.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../player/bloc/player_controller_cubit.dart';
-import '../../player/bloc/player_cubit.dart';
-import '../../player/bloc/player_state.dart';
 import '../bloc/queue_cubit.dart';
 import '../bloc/queue_state.dart';
 
@@ -32,13 +30,7 @@ class QueueScreen extends StatelessWidget {
               tracks: tracks,
               onClearTap: () => _confirmClear(context),
             ),
-            QueueLoaded(:final tracks) =>
-              BlocSelector<PlayerCubit, PlayerSnapshot, int>(
-                selector: (snap) => switch (snap) {
-                  PlayerData(:final status) => status?.playingNowPosition ?? -1,
-                  _ => -1,
-                },
-                builder: (context, currentIndex) => _DataView(
+            QueueLoaded(:final tracks, :final currentIndex) => _DataView(
                   items: tracks,
                   currentIndex: currentIndex,
                   onTap: (i) =>
@@ -46,7 +38,6 @@ class QueueScreen extends StatelessWidget {
                   onRemove: (i) => context.read<QueueCubit>().removeItem(i),
                   onClearTap: () => _confirmClear(context),
                 ),
-              ),
           },
         ),
       ),
