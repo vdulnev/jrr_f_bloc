@@ -4,9 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
-import '../../offline/data/models/download_job.dart';
-import '../../offline/data/models/download_state.dart';
-import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
@@ -15,9 +12,8 @@ import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/downloaded_navigation.dart';
 import '../../player/bloc/player_controller_cubit.dart';
 import '../../zones/active_zone_service.dart';
-import '../../zones/data/models/zone.dart';
+import '../bloc/album_row_tile_cubit.dart';
 import '../data/models/album.dart';
-import '../data/models/tracks.dart';
 import '../data/repositories/library_repository.dart';
 import 'library_navigation.dart';
 
@@ -51,71 +47,40 @@ class AlbumRowTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = getIt<ActiveZoneService>();
-    return StreamBuilder<Zone?>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final activeZone = snap.data ?? service.state;
-        final isOffline = activeZone?.isOffline == true;
-        final tracks = getIt<DownloadedTracksService>();
-        final jobsSvc = getIt<DownloadJobsService>();
-        return StreamBuilder<List<DownloadedTrack>>(
-          stream: tracks.stream,
-          initialData: tracks.state,
-          builder: (context, dlSnap) =>
-              StreamBuilder<List<DownloadJob>>(
-                stream: jobsSvc.stream,
-                initialData: jobsSvc.state,
-                builder: (context, jobSnap) {
-                  final downloaded = dlSnap.data ?? tracks.state;
-                  final jobs = jobSnap.data ?? jobsSvc.state;
-                  final downloadedInAlbum = downloaded
-                      .where((t) => t.albumGroupId == album.albumGroupId)
-                      .toList();
-                  if (isOffline && downloadedInAlbum.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  final jobsInAlbum = jobs
-                      .where((j) => j.track.albumGroupId == album.albumGroupId)
-                      .toList();
-                  final activeJobs = jobsInAlbum.where(
-                    (j) =>
-                        j.state == DownloadState.queued ||
-                        j.state == DownloadState.running,
-                  );
-                  final failedJobs = jobsInAlbum.where(
-                    (j) => j.state == DownloadState.failed,
-                  );
-                  return _Row(
-                    album: album,
-                    showArtist: showArtist,
-                    indent: indent,
-                    titleOverride: titleOverride,
-                    onTap:
-                        onTap ??
-                        () => isOffline
-                            ? pushDownloadedAlbumDetail(
-                                context,
-                                album.albumGroupId,
-                              )
-                            : pushAlbumDetail(context, album),
-                    hasSubItems: hasSubItems,
-                    isExpanded: isExpanded,
-                    onToggle: onToggle,
-                    isOffline: isOffline,
-                    showDownload: !isOffline && activeJobs.isEmpty,
-                    showCancel: !isOffline && activeJobs.isNotEmpty,
-                    showDelete: downloadedInAlbum.isNotEmpty,
-                    showRetry:
-                        !isOffline &&
-                        failedJobs.isNotEmpty &&
-                        activeJobs.isEmpty,
-                  );
-                },
-              ),
-        );
-      },
+    return BlocProvider<AlbumRowTileCubit>(
+      key: ValueKey('album-row-${album.albumGroupId}'),
+      create: (_) => AlbumRowTileCubit(
+        album: album,
+        activeZone: getIt<ActiveZoneService>(),
+        tracks: getIt<DownloadedTracksService>(),
+        jobs: getIt<DownloadJobsService>(),
+        library: getIt<LibraryRepository>(),
+        repo: getIt<DownloadsRepository>(),
+      ),
+      child: BlocBuilder<AlbumRowTileCubit, AlbumRowTileViewState>(
+        builder: (context, view) {
+          if (view.hidden) return const SizedBox.shrink();
+          return _Row(
+            album: album,
+            showArtist: showArtist,
+            indent: indent,
+            titleOverride: titleOverride,
+            onTap:
+                onTap ??
+                () => view.isOffline
+                    ? pushDownloadedAlbumDetail(context, album.albumGroupId)
+                    : pushAlbumDetail(context, album),
+            hasSubItems: hasSubItems,
+            isExpanded: isExpanded,
+            onToggle: onToggle,
+            isOffline: view.isOffline,
+            showDownload: view.showDownload,
+            showCancel: view.showCancel,
+            showDelete: view.showDelete,
+            showRetry: view.showRetry,
+          );
+        },
+      ),
     );
   }
 }
@@ -328,64 +293,29 @@ class _Row extends StatelessWidget {
       pushFolderTracks(context, album.folderPath);
       return;
     }
+
+    final cubit = context.read<AlbumRowTileCubit>();
     final controller = context.read<PlayerControllerCubit>();
-    final repo = getIt<DownloadsRepository>();
-    final library = getIt<LibraryRepository>();
-    final downloads = getIt<DownloadedTracksService>().state;
 
-    Tracks? resolveAlbumTracks() {
-      if (isOffline) {
-        final filtered =
-            downloads
-                .where((t) => t.albumGroupId == album.albumGroupId)
-                .map((t) => t.track)
-                .toList()
-              ..sort((a, b) {
-                final discCompare = a.discNumber.compareTo(b.discNumber);
-                if (discCompare != 0) return discCompare;
-                return a.trackNumber.compareTo(b.trackNumber);
-              });
-        return Tracks(tracks: filtered);
-      }
-      return null;
-    }
-
-    if (action == 'cancelDownload' || action == 'deleteDownload') {
-      final tracks =
-          resolveAlbumTracks() ??
-          (await library.getAlbumTracks(album)).match((_) => null, (t) => t);
-      if (tracks == null) return;
-      final keys = tracks.tracks.map((t) => t.fileKey).toList();
-      if (action == 'cancelDownload') {
-        await repo.cancelAll(keys);
-      } else {
+    switch (action) {
+      case 'play':
+        await cubit.play(controller);
+      case 'playNext':
+        await cubit.playNext(controller);
+      case 'add':
+        await cubit.add(controller);
+      case 'download':
+        await cubit.download();
+      case 'cancelDownload':
+        await cubit.cancelDownload();
+      case 'deleteDownload':
         if (!context.mounted) return;
         final confirmed = await showConfirmDeleteDialog(
           context: context,
           title: 'Delete downloads?',
-          message:
-              'Delete ${keys.length} downloaded tracks from "${album.name}"?',
+          message: 'Delete downloaded tracks from "${album.name}"?',
         );
-        if (!confirmed) return;
-        await repo.deleteAll(keys);
-      }
-      return;
+        if (confirmed) await cubit.deleteDownload();
     }
-
-    final tracks =
-        resolveAlbumTracks() ??
-        (await library.getAlbumTracks(album)).match((_) => null, (t) => t);
-    if (tracks == null) return;
-    switch (action) {
-      case 'play':
-        await controller.playNow(tracks);
-      case 'playNext':
-        await controller.playNext(tracks);
-      case 'add':
-        await controller.addToQueue(tracks);
-      case 'download':
-        await repo.enqueueAll(tracks.tracks);
-    }
-    await controller.refresh();
   }
 }

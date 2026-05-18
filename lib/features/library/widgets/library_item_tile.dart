@@ -3,25 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../offline/bloc/download_status.dart';
+import '../../offline/data/models/download_state.dart';
+import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
-import '../../offline/data/models/download_job.dart';
-import '../../offline/data/models/download_state.dart';
-import '../../offline/data/models/downloaded_track.dart';
-import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/download_progress_indicator.dart';
 import '../../player/bloc/player_controller_cubit.dart';
 import '../../zones/active_zone_service.dart';
-import '../../zones/data/models/zone.dart';
+import '../bloc/library_item_tile_cubit.dart';
 import '../data/models/track.dart';
-import '../data/models/tracks.dart';
 
-/// Track row used in album / folder / search lists. Phase 8 layers in
-/// download chrome: per-track progress, status-aware popup entries, and
-/// offline-mode visibility rules.
-class LibraryItemTile extends StatefulWidget {
+/// Track row used in album / folder / search lists. Owns one paired
+/// [LibraryItemTileCubit] that folds the active zone + per-track
+/// download status into a single record.
+class LibraryItemTile extends StatelessWidget {
   final Track item;
   final int? trackNumber;
   final bool collapsedByDefault;
@@ -34,10 +30,35 @@ class LibraryItemTile extends StatefulWidget {
   });
 
   @override
-  State<LibraryItemTile> createState() => _LibraryItemTileState();
+  Widget build(BuildContext context) {
+    return BlocProvider<LibraryItemTileCubit>(
+      key: ValueKey('lib-tile-${item.fileKey}'),
+      create: (_) => LibraryItemTileCubit(
+        track: item,
+        activeZone: getIt<ActiveZoneService>(),
+        tracks: getIt<DownloadedTracksService>(),
+        jobs: getIt<DownloadJobsService>(),
+        repo: getIt<DownloadsRepository>(),
+      ),
+      child: _Tile(
+        item: item,
+        trackNumber: trackNumber,
+      ),
+    );
+  }
 }
 
-class _LibraryItemTileState extends State<LibraryItemTile> {
+class _Tile extends StatefulWidget {
+  final Track item;
+  final int? trackNumber;
+
+  const _Tile({required this.item, required this.trackNumber});
+
+  @override
+  State<_Tile> createState() => _TileState();
+}
+
+class _TileState extends State<_Tile> {
   bool _expanded = false;
 
   @override
@@ -99,45 +120,15 @@ class _LibraryItemTileState extends State<LibraryItemTile> {
         children: [
           DownloadProgressIndicator(fileKey: item.fileKey),
           const SizedBox(width: 4),
-          Builder(
-            builder: (context) {
-              final service = getIt<ActiveZoneService>();
-              return StreamBuilder<Zone?>(
-                stream: service.stream,
-                initialData: service.state,
-                builder: (context, snap) {
-                  final activeZone = snap.data ?? service.state;
-                  final isOffline = activeZone?.isOffline == true;
-                  final tracks = getIt<DownloadedTracksService>();
-                  final jobs = getIt<DownloadJobsService>();
-                  return StreamBuilder<List<DownloadedTrack>>(
-                    stream: tracks.stream,
-                    initialData: tracks.state,
-                    builder: (context, dlSnap) =>
-                        StreamBuilder<List<DownloadJob>>(
-                          stream: jobs.stream,
-                          initialData: jobs.state,
-                          builder: (context, jobSnap) {
-                            final downloaded = dlSnap.data ?? tracks.state;
-                            final jobList = jobSnap.data ?? jobs.state;
-                            final status = DownloadStatus.forTrack(
-                              fileKey: item.fileKey,
-                              downloaded: downloaded,
-                              jobs: jobList,
-                            );
-                            if (isOffline &&
-                                status != DownloadState.downloaded) {
-                              return const SizedBox(width: 18);
-                            }
-                            return _Menu(
-                              item: item,
-                              status: status,
-                              isOffline: isOffline,
-                            );
-                          },
-                        ),
-                  );
-                },
+          BlocBuilder<LibraryItemTileCubit, LibraryItemTileViewState>(
+            builder: (context, view) {
+              if (view.isOffline && view.status != DownloadState.downloaded) {
+                return const SizedBox(width: 18);
+              }
+              return _Menu(
+                item: item,
+                status: view.status,
+                isOffline: view.isOffline,
               );
             },
           ),
@@ -242,17 +233,16 @@ class _Menu extends StatelessWidget {
   }
 
   Future<void> _handleAction(BuildContext context, String action) async {
+    final cubit = context.read<LibraryItemTileCubit>();
     final controller = context.read<PlayerControllerCubit>();
-    final repo = getIt<DownloadsRepository>();
-    final tracks = Tracks(tracks: [item]);
     final messenger = ScaffoldMessenger.maybeOf(context);
     switch (action) {
       case 'play':
-        await controller.playNow(tracks);
+        await cubit.play(controller);
       case 'playNext':
-        await controller.playNext(tracks);
+        await cubit.playNext(controller);
       case 'add':
-        await controller.addToQueue(tracks);
+        await cubit.add(controller);
         messenger?.showSnackBar(
           const SnackBar(
             content: Text('Added to playing now'),
@@ -260,9 +250,9 @@ class _Menu extends StatelessWidget {
           ),
         );
       case 'download':
-        await repo.enqueue(item);
+        await cubit.download();
       case 'cancelDownload':
-        await repo.cancel(item.fileKey);
+        await cubit.cancelDownload();
       case 'deleteDownload':
         if (!context.mounted) return;
         final confirmed = await showConfirmDeleteDialog(
@@ -270,7 +260,7 @@ class _Menu extends StatelessWidget {
           title: 'Delete Download',
           message: 'Delete downloaded track "${item.name}"?',
         );
-        if (confirmed) await repo.delete(item.fileKey);
+        if (confirmed) await cubit.deleteDownload();
     }
   }
 }

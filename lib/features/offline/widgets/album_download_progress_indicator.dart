@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../bloc/download_status.dart';
-import '../data/models/download_job.dart';
+import '../bloc/album_download_progress_cubit.dart';
 import '../data/models/download_state.dart';
 import '../download_jobs_service.dart';
 
@@ -17,25 +17,31 @@ class AlbumDownloadProgressIndicator extends StatelessWidget {
     super.key,
   });
 
-  // Phase 4 wraps this in an AlbumDownloadProgressCubit per indicator.
   @override
   Widget build(BuildContext context) {
-    final service = getIt<DownloadJobsService>();
-    return StreamBuilder<List<DownloadJob>>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final jobs = snap.data ?? service.state;
-        final status = DownloadStatus.forAlbum(
-          albumGroupId: albumGroupId,
-          jobs: jobs,
-        );
-        final progress = DownloadStatus.progressForAlbum(
-          albumGroupId: albumGroupId,
-          jobs: jobs,
-        );
+    return BlocProvider<AlbumDownloadProgressCubit>(
+      key: ValueKey('album-progress-$albumGroupId'),
+      create: (_) => AlbumDownloadProgressCubit(
+        albumGroupId: albumGroupId,
+        jobs: getIt<DownloadJobsService>(),
+      ),
+      child: _Body(size: size),
+    );
+  }
+}
 
-        switch (status) {
+class _Body extends StatelessWidget {
+  final double size;
+  const _Body({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<
+      AlbumDownloadProgressCubit,
+      AlbumDownloadProgressViewState
+    >(
+      builder: (context, view) {
+        switch (view.status) {
           case DownloadState.queued:
             return SizedBox(
               width: size,
@@ -52,7 +58,7 @@ class AlbumDownloadProgressIndicator extends StatelessWidget {
               child: TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+                tween: Tween(begin: 0, end: view.progress.clamp(0.0, 1.0)),
                 builder: (_, value, _) => CircularProgressIndicator(
                   value: value > 0 ? value : null,
                   strokeWidth: 2,

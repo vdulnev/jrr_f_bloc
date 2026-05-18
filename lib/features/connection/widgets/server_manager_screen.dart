@@ -9,9 +9,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/logging/file_log_observer.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../offline/bloc/failed_downloads_cubit.dart';
+import '../../offline/bloc/offline_storage_cubit.dart';
 import '../../offline/data/models/download_job.dart';
-import '../../offline/data/models/download_state.dart';
-import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
@@ -169,58 +169,58 @@ class _StorageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = getIt<DownloadedTracksService>();
-    return StreamBuilder<List<DownloadedTrack>>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final tracks = snap.data ?? service.state;
-        final count = tracks.length;
-        final totalBytes = tracks.fold<int>(
-          0,
-          (sum, t) => sum + t.fileSizeBytes,
-        );
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('OFFLINE STORAGE', style: AppTextStyles.sectionLabel),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.bg2,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Column(
-                children: [
-                  _InfoRow(label: 'Downloaded Tracks', value: '$count'),
-                  _InfoRow(
-                    label: 'Total Size',
-                    value: _formatBytes(totalBytes),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: count > 0
-                            ? () => _confirmClear(context)
-                            : null,
-                        icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                        label: const Text('Clear All Downloads'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.error,
-                          side: const BorderSide(color: AppColors.error),
+    return BlocProvider<OfflineStorageCubit>(
+      create: (_) => OfflineStorageCubit(
+        tracks: getIt<DownloadedTracksService>(),
+        repo: getIt<DownloadsRepository>(),
+      ),
+      child: BlocBuilder<OfflineStorageCubit, OfflineStorageViewState>(
+        builder: (context, view) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('OFFLINE STORAGE', style: AppTextStyles.sectionLabel),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.bg2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Column(
+                  children: [
+                    _InfoRow(label: 'Downloaded Tracks', value: '${view.count}'),
+                    _InfoRow(
+                      label: 'Total Size',
+                      value: _formatBytes(view.totalBytes),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: view.count > 0
+                              ? () => _confirmClear(context)
+                              : null,
+                          icon: const Icon(
+                            Icons.delete_sweep_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Clear All Downloads'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -237,6 +237,7 @@ class _StorageSection extends StatelessWidget {
   }
 
   void _confirmClear(BuildContext context) {
+    final cubit = context.read<OfflineStorageCubit>();
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -251,9 +252,9 @@ class _StorageSection extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              getIt<DownloadsRepository>().clearAll();
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await cubit.clearAll();
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text(
               'Clear All',
@@ -271,51 +272,50 @@ class _FailedDownloadsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = getIt<DownloadJobsService>();
-    return StreamBuilder<List<DownloadJob>>(
-      stream: service.stream,
-      initialData: service.state,
-      builder: (context, snap) {
-        final jobs = snap.data ?? service.state;
-        final failed = jobs
-            .where((j) => j.state == DownloadState.failed)
-            .toList();
-        if (failed.isEmpty) return const SizedBox.shrink();
-        final repo = getIt<DownloadsRepository>();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'FAILED DOWNLOADS (${failed.length})',
-              style: AppTextStyles.sectionLabel,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.bg2,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.line),
+    return BlocProvider<FailedDownloadsCubit>(
+      create: (_) => FailedDownloadsCubit(
+        jobs: getIt<DownloadJobsService>(),
+        repo: getIt<DownloadsRepository>(),
+      ),
+      child: BlocBuilder<FailedDownloadsCubit, List<DownloadJob>>(
+        builder: (context, failed) {
+          if (failed.isEmpty) return const SizedBox.shrink();
+          final cubit = context.read<FailedDownloadsCubit>();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'FAILED DOWNLOADS (${failed.length})',
+                style: AppTextStyles.sectionLabel,
               ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < failed.length; i++) ...[
-                    if (i > 0) const Divider(height: 1, color: AppColors.line),
-                    _FailedRow(
-                      title: failed[i].track.name,
-                      subtitle: [
-                        failed[i].track.artist,
-                        if (failed[i].error != null) failed[i].error!,
-                      ].where((s) => s.isNotEmpty).join(' • '),
-                      onRetry: () => repo.enqueue(failed[i].track),
-                      onRemove: () => repo.removeJob(failed[i].fileKey),
-                    ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.bg2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < failed.length; i++) ...[
+                      if (i > 0) const Divider(height: 1, color: AppColors.line),
+                      _FailedRow(
+                        title: failed[i].track.name,
+                        subtitle: [
+                          failed[i].track.artist,
+                          if (failed[i].error != null) failed[i].error!,
+                        ].where((s) => s.isNotEmpty).join(' • '),
+                        onRetry: () => cubit.retry(failed[i]),
+                        onRemove: () => cubit.remove(failed[i]),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

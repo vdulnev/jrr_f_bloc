@@ -283,7 +283,7 @@ entries) still works — wired temporarily via direct service reads /
 - `app.dart` drops both `BlocProvider`s; the `DownloadsRepository`
   import stays for `LocalPlayerCubit`'s constructor.
 
-### Phase 4 — Download-aware tile / indicator companion cubits (1 day)
+### Phase 4 — Download-aware tile / indicator companion cubits (1 day) — ✅ done
 
 **Goal.** Replace the inline `StreamBuilder` / multi-`BlocBuilder` in
 the download-aware widgets with single companion cubits per widget.
@@ -301,6 +301,12 @@ the download-aware widgets with single companion cubits per widget.
 **Acceptance.** No widget in the library / offline tree reads
 `DownloadJobsService` / `DownloadedTracksService` directly. Rule 1
 satisfied for every tile.
+
+**Notes (post-implementation).**
+- All 7 companion cubits implemented and wired.
+- Rule 2 (Widgets never touch services / repositories directly) enforced: action handlers (play, download, cancel, delete) moved into cubits.
+- `LibraryItemTileCubit` and `AlbumRowTileCubit` now accept full `Track`/`Album` objects and manage their own dependencies via constructor injection.
+- `ServerManagerScreen` refactored to remove `StreamBuilder` and direct `getIt<DownloadsRepository>` calls.
 
 ### Phase 5 — Downloaded screen companion cubits (½ day)
 
