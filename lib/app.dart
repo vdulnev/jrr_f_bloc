@@ -12,13 +12,7 @@ import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
-import 'features/player/local_playback_service.dart';
 import 'features/player/mcws_player_service.dart';
-import 'features/player/player_service.dart';
-import 'features/player/services/local_player_service.dart';
-import 'features/queue/bloc/queue_cubit.dart';
-import 'features/queue/data/repositories/queue_repository.dart';
-import 'features/zones/active_zone_service.dart';
 import 'features/zones/zones_service.dart';
 
 class App extends StatefulWidget {
@@ -53,19 +47,6 @@ class _AppState extends State<App> {
         ),
         BlocProvider<LocalAudioQualityCubit>(
           create: (_) => LocalAudioQualityCubit(prefs: getIt()),
-        ),
-        // QueueCubit watches the playing-now change counter; eager so
-        // the queue is current the moment the user opens the tab.
-        BlocProvider<QueueCubit>(
-          lazy: false,
-          create: (ctx) => QueueCubit(
-            repository: getIt<QueueRepository>(),
-            service: getIt<LocalPlayerService>(),
-            localPlayer: getIt<LocalPlaybackService>(),
-            activeZone: getIt<ActiveZoneService>(),
-            player: getIt<PlayerService>(),
-            talker: getIt(),
-          ),
         ),
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
       ],

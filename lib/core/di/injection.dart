@@ -39,6 +39,7 @@ import '../../features/queue/data/repositories/local_queue_repository.dart';
 import '../../features/queue/data/repositories/local_queue_repository_impl.dart';
 import '../../features/queue/data/repositories/queue_repository.dart';
 import '../../features/queue/data/repositories/queue_repository_impl.dart';
+import '../../features/queue/queue_service.dart';
 import '../../features/zones/active_zone_service.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
@@ -239,6 +240,20 @@ Future<void> configureDependencies() async {
       repository: getIt<ZoneRepository>(),
       session: getIt<SessionService>(),
       activeZone: getIt<ActiveZoneService>(),
+      talker: getIt<Talker>(),
+    ),
+  );
+
+  // Playing Now queue — eager so the queue is current the moment the
+  // user opens the Queue tab. Watches PlayerService's change counter
+  // and the local sequence stream for the two zone families.
+  getIt.registerSingleton<QueueService>(
+    QueueService(
+      repository: getIt<QueueRepository>(),
+      service: getIt<LocalPlayerService>(),
+      localPlayer: getIt<LocalPlaybackService>(),
+      activeZone: getIt<ActiveZoneService>(),
+      player: getIt<PlayerService>(),
       talker: getIt<Talker>(),
     ),
   );

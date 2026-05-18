@@ -9,43 +9,50 @@ import '../../../shared/widgets/vu_meter.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
 import '../../player/player_command_service.dart';
-import '../bloc/queue_cubit.dart';
+import '../bloc/queue_screen_cubit.dart';
 import '../bloc/queue_state.dart';
+import '../queue_service.dart';
 
 class QueueScreen extends StatelessWidget {
   const QueueScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: BlocBuilder<QueueCubit, QueueState>(
-          builder: (context, state) => switch (state) {
-            QueueLoading() => const LoadingView(),
-            QueueError(:final error) => ErrorView(
-              error: error,
-              onRetry: () => context.read<QueueCubit>().refresh(),
-            ),
-            QueueLoaded(:final tracks) when tracks.isEmpty => _EmptyView(
-              tracks: tracks,
-              onClearTap: () => _confirmClear(context),
-            ),
-            QueueLoaded(:final tracks, :final currentIndex) => _DataView(
-              items: tracks,
-              currentIndex: currentIndex,
-              onTap: (i) => getIt<PlayerCommandService>().playByIndex(i),
-              onRemove: (i) => context.read<QueueCubit>().removeItem(i),
-              onClearTap: () => _confirmClear(context),
-            ),
-          },
+    return BlocProvider<QueueScreenCubit>(
+      create: (_) => QueueScreenCubit(
+        queue: getIt<QueueService>(),
+        commands: getIt<PlayerCommandService>(),
+      ),
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: BlocBuilder<QueueScreenCubit, QueueState>(
+            builder: (context, state) => switch (state) {
+              QueueLoading() => const LoadingView(),
+              QueueError(:final error) => ErrorView(
+                error: error,
+                onRetry: () => context.read<QueueScreenCubit>().refresh(),
+              ),
+              QueueLoaded(:final tracks) when tracks.isEmpty => _EmptyView(
+                tracks: tracks,
+                onClearTap: () => _confirmClear(context),
+              ),
+              QueueLoaded(:final tracks, :final currentIndex) => _DataView(
+                items: tracks,
+                currentIndex: currentIndex,
+                onTap: (i) => context.read<QueueScreenCubit>().playByIndex(i),
+                onRemove: (i) => context.read<QueueScreenCubit>().removeItem(i),
+                onClearTap: () => _confirmClear(context),
+              ),
+            },
+          ),
         ),
       ),
     );
   }
 
   Future<void> _confirmClear(BuildContext context) async {
-    final cubit = context.read<QueueCubit>();
+    final cubit = context.read<QueueScreenCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

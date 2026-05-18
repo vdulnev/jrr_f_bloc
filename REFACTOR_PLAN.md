@@ -475,7 +475,7 @@ still surfaces.
   stays put (shared by service and `ZoneListCubit`).
 - `flutter analyze` clean. All 48 tests pass.
 
-### Phase 11 — `QueueService` + companion cubit (1 day)
+### Phase 11 — `QueueService` + companion cubit (1 day) — ✅ done
 
 **Goal.** Retire `QueueCubit`. `QueueScreen` gets a paired companion.
 
@@ -489,6 +489,20 @@ still surfaces.
 
 **Acceptance.** Queue updates on MCWS change-counter bumps and on
 local sequence changes. Reorder / remove / clear still work.
+
+**Notes (post-implementation).**
+- `QueueService` is an eager GetIt singleton. Owns the queue snapshot
+  and the three subscriptions (active zone, player snapshots, local
+  sequence). Exposes `state`/`stream` plus `refresh`/`removeItem`/
+  `moveItem`/`clearQueue`. Reuses the existing `QueueState` Freezed
+  union as its surface (no separate `QueueScreenState` was needed
+  since the screen's state shape is the same).
+- `QueueScreenCubit` ↔ `QueueScreen` — mirrors the service stream
+  and forwards mutation + `playByIndex` calls. Resolves the service
+  and `PlayerCommandService` via `getIt` at construction.
+- `BlocProvider<QueueCubit>` removed from `app.dart`.
+- `bloc/queue_cubit.dart` deleted.
+- `flutter analyze` clean. All 48 tests pass.
 
 ### Phase 12 — Cleanup & verification (½ day)
 
@@ -520,7 +534,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 | 8     | PlayerService + companion cubits ✅                | 1 day    |
 | 9     | PlayerCommandService ✅                            | ½ day    |
 | 10    | ZonesService ✅                                    | ½ day    |
-| 11    | QueueService + companion cubit                     | 1 day    |
+| 11    | QueueService + companion cubit ✅                  | 1 day    |
 | 12    | Cleanup & verification                             | ½ day    |
 | **Total** |                                                | **~8.5 days** |
 
