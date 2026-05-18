@@ -43,9 +43,16 @@ Future<void> main() async {
 
   final talker = getIt<Talker>();
 
+  // Note: TalkerBlocLoggerSettings defaults `printChanges` to false, which
+  // silences every Cubit.emit() — and most of our state machines are
+  // Cubits. Flip it on (plus creations/closings) so the observer is
+  // actually useful in the log file.
   Bloc.observer = TalkerBlocObserver(
     talker: talker,
     settings: const TalkerBlocLoggerSettings(
+      printChanges: true,
+      printCreations: true,
+      printClosings: true,
       printStateFullData: false,
       printEventFullData: false,
     ),
