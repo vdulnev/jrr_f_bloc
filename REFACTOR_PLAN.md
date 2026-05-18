@@ -446,7 +446,7 @@ popup still fires the right path. Analyzer + tests green.
   remains as the shared command surface for the two engines.
 - `flutter analyze` clean. All 48 tests pass.
 
-### Phase 10 — `ZonesService` (½ day)
+### Phase 10 — `ZonesService` (½ day) — ✅ done
 
 **Goal.** Retire `ZonesCubit`. `ZoneListCubit` already exists and is
 the only screen-level cubit; it now reads the service.
@@ -461,6 +461,19 @@ the only screen-level cubit; it now reads the service.
 **Acceptance.** Zone list refreshes on a 30 s tick. App background
 pauses; foreground resumes. Auto-zone (Phase 10 of the original plan)
 still surfaces.
+
+**Notes (post-implementation).**
+- `ZonesService` is an eager GetIt singleton. Owns the 30 s polling
+  timer, subscribes to `SessionService` (start/stop on auth flips)
+  and to `ActiveZoneService` (pause when the user picks Offline).
+  Emits `ZonesState` (the existing Freezed union, reused as-is).
+- `ZoneListCubit` now takes `ZonesService` directly via constructor.
+- `BlocProvider<ZonesCubit>` removed from `app.dart`. Lifecycle hook
+  calls `getIt<ZonesService>().pause()` / `.resume()` instead of
+  reading from the widget tree.
+- `bloc/zones_cubit.dart` deleted; the `ZonesState` Freezed union
+  stays put (shared by service and `ZoneListCubit`).
+- `flutter analyze` clean. All 48 tests pass.
 
 ### Phase 11 — `QueueService` + companion cubit (1 day)
 
@@ -506,7 +519,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 | 7     | LocalPlaybackService ✅                            | 1.5 days |
 | 8     | PlayerService + companion cubits ✅                | 1 day    |
 | 9     | PlayerCommandService ✅                            | ½ day    |
-| 10    | ZonesService                                       | ½ day    |
+| 10    | ZonesService ✅                                    | ½ day    |
 | 11    | QueueService + companion cubit                     | 1 day    |
 | 12    | Cleanup & verification                             | ½ day    |
 | **Total** |                                                | **~8.5 days** |

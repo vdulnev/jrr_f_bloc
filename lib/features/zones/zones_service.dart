@@ -1,20 +1,20 @@
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker/talker.dart';
 
-import '../../../core/error/app_exception.dart';
-import '../../connection/bloc/session_state.dart';
-import '../../connection/session_service.dart';
-import '../data/models/zone.dart';
-import '../data/repositories/zone_repository.dart';
-import '../active_zone_service.dart';
-import 'zones_state.dart';
+import '../../core/error/app_exception.dart';
+import '../connection/bloc/session_state.dart';
+import '../connection/session_service.dart';
+import 'active_zone_service.dart';
+import 'bloc/zones_state.dart';
+import 'data/models/zone.dart';
+import 'data/repositories/zone_repository.dart';
 
-/// Loads the zone list from the server and polls every 30s while the
-/// session is authenticated. Suspends polling while the active zone is the
-/// synthetic Offline zone (no server to talk to).
-class ZonesCubit extends Cubit<ZonesState> {
+/// Owns the zone-list snapshot and the 30 s polling timer. Replaces
+/// `ZonesCubit`. Subscribed to by `ZoneListCubit` (screen companion);
+/// `ActiveZoneService` still gets seeded via `onZonesLoaded` after
+/// each fetch.
+class ZonesService {
   final ZoneRepository _repo;
   final SessionService _session;
   final ActiveZoneService _activeZone;
@@ -22,11 +22,14 @@ class ZonesCubit extends Cubit<ZonesState> {
 
   static const _pollInterval = Duration(seconds: 30);
 
+  final _controller = StreamController<ZonesState>.broadcast();
   StreamSubscription<SessionState>? _sessionSub;
   StreamSubscription<Zone?>? _activeZoneSub;
   Timer? _timer;
 
-  ZonesCubit({
+  ZonesState _state = const ZonesState.loading();
+
+  ZonesService({
     required ZoneRepository repository,
     required SessionService session,
     required ActiveZoneService activeZone,
@@ -34,12 +37,21 @@ class ZonesCubit extends Cubit<ZonesState> {
   }) : _repo = repository,
        _session = session,
        _activeZone = activeZone,
-       _talker = talker,
-       super(const ZonesState.loading()) {
+       _talker = talker {
     _sessionSub = _session.stream.listen(_onSessionChanged);
     _activeZoneSub = _activeZone.stream.listen(_onActiveZoneChanged);
-    // Seed from current session state — listeners only fire on change.
     _onSessionChanged(_session.state);
+  }
+
+  ZonesState get state => _state;
+  Stream<ZonesState> get stream => _controller.stream;
+
+  AppException? get error =>
+      _state is ZonesError ? (_state as ZonesError).error : null;
+
+  void _emit(ZonesState next) {
+    _state = next;
+    _controller.add(next);
   }
 
   void _onSessionChanged(SessionState state) {
@@ -49,12 +61,11 @@ class ZonesCubit extends Cubit<ZonesState> {
         _restartTimer();
       case Restoring() || Unauthenticated():
         _stopTimer();
-        emit(const ZonesState.loading());
+        _emit(const ZonesState.loading());
     }
   }
 
   void _onActiveZoneChanged(Zone? zone) {
-    // Suspend polling when the user picks the Offline zone (server-less).
     if (zone?.isOffline == true) {
       _stopTimer();
     } else if (_session.state is Authenticated && _timer == null) {
@@ -66,11 +77,11 @@ class ZonesCubit extends Cubit<ZonesState> {
     final result = await _repo.getZones();
     result.fold(
       (e) {
-        _talker.warning('[ZonesCubit] getZones failed: $e');
-        emit(ZonesState.error(error: e));
+        _talker.warning('[ZonesService] getZones failed: $e');
+        _emit(ZonesState.error(error: e));
       },
       (zones) {
-        emit(ZonesState.loaded(zones: zones));
+        _emit(ZonesState.loaded(zones: zones));
         _activeZone.onZonesLoaded(zones);
       },
     );
@@ -80,7 +91,7 @@ class ZonesCubit extends Cubit<ZonesState> {
     _stopTimer();
     if (_activeZone.state?.isOffline == true) return;
     _timer = Timer.periodic(_pollInterval, (_) {
-      _talker.debug('[ZonesCubit] Tick — refreshing zone list');
+      _talker.debug('[ZonesService] Tick — refreshing zone list');
       refresh();
     });
   }
@@ -90,25 +101,18 @@ class ZonesCubit extends Cubit<ZonesState> {
     _timer = null;
   }
 
-  /// Pause polling without dropping state (e.g. when the app is backgrounded).
   void pause() => _stopTimer();
 
-  /// Resume polling if a session is active.
   void resume() {
     if (_session.state is Authenticated) {
       _restartTimer();
     }
   }
 
-  /// Convenience for callers that don't want to switch on the union.
-  AppException? get error =>
-      state is ZonesError ? (state as ZonesError).error : null;
-
-  @override
-  Future<void> close() async {
+  Future<void> dispose() async {
     _stopTimer();
     await _sessionSub?.cancel();
     await _activeZoneSub?.cancel();
-    return super.close();
+    await _controller.close();
   }
 }

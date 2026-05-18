@@ -4,23 +4,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../active_zone_service.dart';
 import '../data/models/zone.dart';
+import '../zones_service.dart';
 import 'zone_list_state.dart';
-import 'zones_cubit.dart';
 import 'zones_state.dart';
 
 /// Companion of [ZoneListScreen]. Aggregates the zones list (from
-/// [ZonesCubit]) with the active zone (from [ActiveZoneService]) into a
+/// [ZonesService]) with the active zone (from [ActiveZoneService]) into a
 /// single immutable [ZoneListState] so the screen binds to exactly one
 /// cubit.
 class ZoneListCubit extends Cubit<ZoneListState> {
-  final ZonesCubit _zones;
+  final ZonesService _zones;
   final ActiveZoneService _activeZone;
 
   StreamSubscription<ZonesState>? _zonesSub;
   StreamSubscription<Zone?>? _activeSub;
 
   ZoneListCubit({
-    required ZonesCubit zones,
+    required ZonesService zones,
     required ActiveZoneService activeZone,
   }) : _zones = zones,
        _activeZone = activeZone,

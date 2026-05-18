@@ -43,6 +43,7 @@ import '../../features/zones/active_zone_service.dart';
 import '../../features/zones/data/repositories/zone_repository.dart';
 import '../../features/zones/data/repositories/zone_repository_impl.dart';
 import '../../features/zones/services/android_auto_session_service.dart';
+import '../../features/zones/zones_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -227,6 +228,18 @@ Future<void> configureDependencies() async {
       mcws: getIt<McwsPlayerService>(),
       local: getIt<LocalPlaybackService>(),
       activeZone: getIt<ActiveZoneService>(),
+    ),
+  );
+
+  // Zone list polling — eager so the active zone resolves at boot
+  // (the Now Playing loader waits on this). Subscribes to the session
+  // and the active-zone service for pause/resume around offline mode.
+  getIt.registerSingleton<ZonesService>(
+    ZonesService(
+      repository: getIt<ZoneRepository>(),
+      session: getIt<SessionService>(),
+      activeZone: getIt<ActiveZoneService>(),
+      talker: getIt<Talker>(),
     ),
   );
 

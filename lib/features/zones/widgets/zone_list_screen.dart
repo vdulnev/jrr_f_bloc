@@ -8,7 +8,7 @@ import '../../../shared/widgets/loading_view.dart';
 import '../active_zone_service.dart';
 import '../bloc/zone_list_cubit.dart';
 import '../bloc/zone_list_state.dart';
-import '../bloc/zones_cubit.dart';
+import '../zones_service.dart';
 import 'zone_tile.dart';
 
 class ZoneListScreen extends StatelessWidget {
@@ -17,8 +17,8 @@ class ZoneListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ZoneListCubit>(
-      create: (ctx) => ZoneListCubit(
-        zones: ctx.read<ZonesCubit>(),
+      create: (_) => ZoneListCubit(
+        zones: getIt<ZonesService>(),
         activeZone: getIt<ActiveZoneService>(),
       ),
       child: const _ZoneListView(),

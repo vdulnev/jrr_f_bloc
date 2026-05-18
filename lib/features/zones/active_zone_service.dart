@@ -33,7 +33,7 @@ class ActiveZoneService {
     _controller.add(next);
   }
 
-  /// Called by `ZonesCubit` whenever a fresh zone list arrives. Restores
+  /// Called by `ZonesService` whenever a fresh zone list arrives. Restores
   /// the previously saved zone, falls back to the first zone, or clears
   /// state if the list is empty.
   void onZonesLoaded(List<Zone> zones) {

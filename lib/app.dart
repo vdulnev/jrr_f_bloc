@@ -19,8 +19,7 @@ import 'features/player/services/local_player_service.dart';
 import 'features/queue/bloc/queue_cubit.dart';
 import 'features/queue/data/repositories/queue_repository.dart';
 import 'features/zones/active_zone_service.dart';
-import 'features/zones/bloc/zones_cubit.dart';
-import 'features/zones/data/repositories/zone_repository.dart';
+import 'features/zones/zones_service.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -50,19 +49,6 @@ class _AppState extends State<App> {
           create: (_) => ArtworkCubit(
             session: getIt<SessionService>(),
             repository: getIt<ConnectionRepository>(),
-          ),
-        ),
-        // ZonesCubit polls the server and drives ActiveZoneService.
-        // Lazy creation would leave the active zone null until the user
-        // visits the Zones tab — and the Now Playing screen waits on
-        // that to leave its loader.
-        BlocProvider<ZonesCubit>(
-          lazy: false,
-          create: (_) => ZonesCubit(
-            repository: getIt<ZoneRepository>(),
-            session: getIt<SessionService>(),
-            activeZone: getIt<ActiveZoneService>(),
-            talker: getIt(),
           ),
         ),
         BlocProvider<LocalAudioQualityCubit>(
@@ -125,11 +111,11 @@ class _LifecycleScopeState extends State<_LifecycleScope> {
     super.initState();
     _listener = AppLifecycleListener(
       onPause: () {
-        context.read<ZonesCubit>().pause();
+        getIt<ZonesService>().pause();
         getIt<McwsPlayerService>().pause();
       },
       onResume: () {
-        context.read<ZonesCubit>().resume();
+        getIt<ZonesService>().resume();
         getIt<McwsPlayerService>().resume();
       },
     );
