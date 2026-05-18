@@ -43,4 +43,3 @@ class OfflineStorageCubit extends Cubit<OfflineStorageViewState> {
     return super.close();
   }
 }
-

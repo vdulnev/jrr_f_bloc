@@ -189,7 +189,10 @@ class _StorageSection extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _InfoRow(label: 'Downloaded Tracks', value: '${view.count}'),
+                    _InfoRow(
+                      label: 'Downloaded Tracks',
+                      value: '${view.count}',
+                    ),
                     _InfoRow(
                       label: 'Total Size',
                       value: _formatBytes(view.totalBytes),
@@ -298,7 +301,8 @@ class _FailedDownloadsSection extends StatelessWidget {
                 child: Column(
                   children: [
                     for (var i = 0; i < failed.length; i++) ...[
-                      if (i > 0) const Divider(height: 1, color: AppColors.line),
+                      if (i > 0)
+                        const Divider(height: 1, color: AppColors.line),
                       _FailedRow(
                         title: failed[i].track.name,
                         subtitle: [

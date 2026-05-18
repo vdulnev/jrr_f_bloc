@@ -22,44 +22,47 @@ class DownloadedAlbumDetailScreen extends StatelessWidget {
         albumGroupId: albumGroupId,
         service: getIt<DownloadedTracksService>(),
       ),
-      child: BlocBuilder<DownloadedAlbumDetailCubit, DownloadedAlbumDetailState>(
-        builder: (context, tracks) {
-          final first = tracks.tracks.isNotEmpty ? tracks.tracks.first : null;
-          return TrackListScaffold(
-            title: Text(
-              first?.album ?? 'Album',
-              style: AppTextStyles.subScreenTitle,
-            ),
-            subtitle: first == null
-                ? 'Downloaded Album'
-                : [
-                    first.albumArtistAuto,
-                    first.dateReadable,
-                  ].where((s) => s.isNotEmpty).join(' · '),
-            tracksState: LibAsync.data(value: tracks),
-            onRetry: () {},
-            actionSheetTitle: 'Album',
-            addedSnackbarLabel: 'Album',
-            emptyState: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.music_off_outlined,
-                    size: 56,
-                    color: AppColors.text3,
+      child:
+          BlocBuilder<DownloadedAlbumDetailCubit, DownloadedAlbumDetailState>(
+            builder: (context, tracks) {
+              final first = tracks.tracks.isNotEmpty
+                  ? tracks.tracks.first
+                  : null;
+              return TrackListScaffold(
+                title: Text(
+                  first?.album ?? 'Album',
+                  style: AppTextStyles.subScreenTitle,
+                ),
+                subtitle: first == null
+                    ? 'Downloaded Album'
+                    : [
+                        first.albumArtistAuto,
+                        first.dateReadable,
+                      ].where((s) => s.isNotEmpty).join(' · '),
+                tracksState: LibAsync.data(value: tracks),
+                onRetry: () {},
+                actionSheetTitle: 'Album',
+                addedSnackbarLabel: 'Album',
+                emptyState: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.music_off_outlined,
+                        size: 56,
+                        color: AppColors.text3,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Album has 0 tracks downloaded',
+                        style: AppTextStyles.emptyState,
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Album has 0 tracks downloaded',
-                    style: AppTextStyles.emptyState,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                ),
+              );
+            },
+          ),
     );
   }
 }

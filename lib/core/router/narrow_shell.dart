@@ -36,9 +36,8 @@ class NarrowShell extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
                 child: MiniPlayerPanel(
-                  onItemTap: () => context
-                      .read<NavigationCubit>()
-                      .select(AppTab.nowPlaying),
+                  onItemTap: () =>
+                      context.read<NavigationCubit>().select(AppTab.nowPlaying),
                 ),
               ),
           ],

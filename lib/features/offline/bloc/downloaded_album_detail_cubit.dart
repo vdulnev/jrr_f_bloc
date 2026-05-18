@@ -6,7 +6,7 @@ import '../downloaded_tracks_service.dart';
 
 typedef DownloadedAlbumDetailState = Tracks;
 
-/// Companion of [DownloadedAlbumDetailScreen]. Filters and sorts 
+/// Companion of [DownloadedAlbumDetailScreen]. Filters and sorts
 /// downloaded tracks for a specific albumGroupId.
 class DownloadedAlbumDetailCubit extends Cubit<DownloadedAlbumDetailState> {
   final String albumGroupId;
@@ -24,20 +24,27 @@ class DownloadedAlbumDetailCubit extends Cubit<DownloadedAlbumDetailState> {
     });
   }
 
-  static DownloadedAlbumDetailState _compute(String albumGroupId, List<DownloadedTrack> all) {
-    final filtered = all
-        .where((t) => t.albumGroupId == albumGroupId)
-        .map((t) => t.track)
-        .toList()
-      ..sort((a, b) {
-        final discCompare = a.discNumber.compareTo(b.discNumber);
-        if (discCompare != 0) return discCompare;
-        return a.trackNumber.compareTo(b.trackNumber);
-      });
+  static DownloadedAlbumDetailState _compute(
+    String albumGroupId,
+    List<DownloadedTrack> all,
+  ) {
+    final filtered =
+        all
+            .where((t) => t.albumGroupId == albumGroupId)
+            .map((t) => t.track)
+            .toList()
+          ..sort((a, b) {
+            final discCompare = a.discNumber.compareTo(b.discNumber);
+            if (discCompare != 0) return discCompare;
+            return a.trackNumber.compareTo(b.trackNumber);
+          });
     return Tracks(tracks: filtered);
   }
 
-  static bool _stateEquals(DownloadedAlbumDetailState a, DownloadedAlbumDetailState b) {
+  static bool _stateEquals(
+    DownloadedAlbumDetailState a,
+    DownloadedAlbumDetailState b,
+  ) {
     if (identical(a, b)) return true;
     if (a.tracks.length != b.tracks.length) return false;
     for (var i = 0; i < a.tracks.length; i++) {

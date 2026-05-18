@@ -504,7 +504,7 @@ local sequence changes. Reorder / remove / clear still work.
 - `bloc/queue_cubit.dart` deleted.
 - `flutter analyze` clean. All 48 tests pass.
 
-### Phase 12 — Cleanup & verification (½ day)
+### Phase 12 — Cleanup & verification (½ day) — ✅ done
 
 **Goal.** Sweep leftovers, format, document.
 
@@ -519,6 +519,25 @@ local sequence changes. Reorder / remove / clear still work.
 **Acceptance.** No widget reads a service directly. No cubit/bloc
 extends `Cubit<T>` while exposing fields/methods beyond `state` +
 input methods. Every cubit pairs to exactly one widget by name.
+
+**Notes (post-implementation).**
+- `dart fix --apply` reported "Nothing to fix"; `dart format .`
+  reformatted 16 files.
+- `PLAN.md` got a "Superseded by `REFACTOR_PLAN.md`" header note
+  listing the retired cubits/blocs. Individual references in §6 /
+  §13 were left intact as historical record of the BLoC port.
+- Tightened the last widgets that were resolving `PlayerCommandService`
+  directly:
+  - `MiniPlayerCubit` ↔ `MiniPlayerPanel` — cubit now takes
+    `PlayerCommandService` via constructor and forwards `playPause`,
+    `next`, `previous`, `setVolume`, `toggleMute`.
+  - `NowPlayingCubit` ↔ `NowPlayingScreen` — cubit gained
+    `playPause`, `next`, `previous`, `seekTo`, `setVolume`,
+    `toggleMute`, `toggleShuffle`, `cycleRepeat`. Body + empty-state
+    + progress section all read `context.read<NowPlayingCubit>()`.
+- `LibraryActionSheet` was an orphan with no callers — deleted.
+- `flutter analyze` clean. All 48 tests pass. Multi-platform smoke
+  test still pending (user-driven).
 
 ### Timeline summary
 
@@ -535,7 +554,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 | 9     | PlayerCommandService ✅                            | ½ day    |
 | 10    | ZonesService ✅                                    | ½ day    |
 | 11    | QueueService + companion cubit ✅                  | 1 day    |
-| 12    | Cleanup & verification                             | ½ day    |
+| 12    | Cleanup & verification ✅                          | ½ day    |
 | **Total** |                                                | **~8.5 days** |
 
 ---

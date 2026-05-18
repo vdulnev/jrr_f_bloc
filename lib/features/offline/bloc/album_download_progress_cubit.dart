@@ -7,13 +7,14 @@ import '../data/models/download_state.dart';
 import '../download_jobs_service.dart';
 import 'download_status.dart';
 
-typedef AlbumDownloadProgressViewState =
-    ({DownloadState status, double progress});
+typedef AlbumDownloadProgressViewState = ({
+  DownloadState status,
+  double progress,
+});
 
 /// Companion of [AlbumDownloadProgressIndicator]. Emits the resolved
 /// status + progress for an entire album-group.
-class AlbumDownloadProgressCubit
-    extends Cubit<AlbumDownloadProgressViewState> {
+class AlbumDownloadProgressCubit extends Cubit<AlbumDownloadProgressViewState> {
   final DownloadJobsService _jobs;
   final String albumGroupId;
   StreamSubscription<List<DownloadJob>>? _sub;

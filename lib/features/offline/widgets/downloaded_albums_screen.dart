@@ -33,24 +33,25 @@ class DownloadedAlbumsScreen extends StatelessWidget {
                 onBack: () => Navigator.of(context).maybePop(),
               ),
               Expanded(
-                child: BlocBuilder<DownloadedAlbumsCubit, DownloadedAlbumsState>(
-                  builder: (context, state) {
-                    if (state.isEmpty) return const _EmptyAlbums();
-                    return ListView.builder(
-                      itemCount: state.length,
-                      itemBuilder: (_, i) {
-                        final album = state[i];
-                        return AlbumRowTile(
-                          album: album,
-                          onTap: () => pushDownloadedAlbumDetail(
-                            context,
-                            album.albumGroupId,
-                          ),
+                child:
+                    BlocBuilder<DownloadedAlbumsCubit, DownloadedAlbumsState>(
+                      builder: (context, state) {
+                        if (state.isEmpty) return const _EmptyAlbums();
+                        return ListView.builder(
+                          itemCount: state.length,
+                          itemBuilder: (_, i) {
+                            final album = state[i];
+                            return AlbumRowTile(
+                              album: album,
+                              onTap: () => pushDownloadedAlbumDetail(
+                                context,
+                                album.albumGroupId,
+                              ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
+                    ),
               ),
             ],
           ),

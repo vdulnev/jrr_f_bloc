@@ -7,7 +7,7 @@ import '../downloaded_tracks_service.dart';
 
 typedef DownloadedAlbumsState = List<Album>;
 
-/// Companion of [DownloadedAlbumsScreen]. Filters and sorts downloaded 
+/// Companion of [DownloadedAlbumsScreen]. Filters and sorts downloaded
 /// albums for a specific artist.
 class DownloadedAlbumsCubit extends Cubit<DownloadedAlbumsState> {
   final String artist;
@@ -25,7 +25,10 @@ class DownloadedAlbumsCubit extends Cubit<DownloadedAlbumsState> {
     });
   }
 
-  static DownloadedAlbumsState _compute(String artist, List<DownloadedTrack> all) {
+  static DownloadedAlbumsState _compute(
+    String artist,
+    List<DownloadedTrack> all,
+  ) {
     final groups = <String, Album>{};
     for (final t in all) {
       final tArtist = t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;

@@ -51,9 +51,8 @@ class _MainPanel extends StatelessWidget {
             ),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: MiniPlayerPanel(
-              onItemTap: () => context
-                  .read<NavigationCubit>()
-                  .select(AppTab.nowPlaying),
+              onItemTap: () =>
+                  context.read<NavigationCubit>().select(AppTab.nowPlaying),
             ),
           ),
       ],

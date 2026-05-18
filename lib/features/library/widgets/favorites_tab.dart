@@ -22,8 +22,7 @@ class FavoritesTab extends StatelessWidget {
           create: (_) => BrowseNavigationCubit(scope: BrowseScope.favorites),
         ),
         BlocProvider(
-          create: (_) =>
-              FavoritesTabCubit(service: getIt<FavoritesService>()),
+          create: (_) => FavoritesTabCubit(service: getIt<FavoritesService>()),
         ),
       ],
       child: const _Body(),

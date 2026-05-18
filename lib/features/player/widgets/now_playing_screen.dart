@@ -31,6 +31,7 @@ class NowPlayingScreen extends StatelessWidget {
         activeZone: getIt<ActiveZoneService>(),
         player: getIt<PlayerService>(),
         lookup: getIt<TrackLookupService>(),
+        commands: getIt<PlayerCommandService>(),
       ),
       child: BlocBuilder<NowPlayingCubit, NowPlayingState>(
         builder: (context, state) {
@@ -67,7 +68,7 @@ class _NowPlayingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final commands = getIt<PlayerCommandService>();
+    final cubit = context.read<NowPlayingCubit>();
 
     return Scaffold(
       body: SafeArea(
@@ -172,7 +173,7 @@ class _NowPlayingBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _ProgressSection(status: status, commands: commands),
+                  _ProgressSection(status: status, cubit: cubit),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -182,12 +183,12 @@ class _NowPlayingBody extends StatelessWidget {
                         color: status.shuffleMode != ShuffleMode.off
                             ? AppColors.accent
                             : AppColors.text3,
-                        onPressed: commands.toggleShuffle,
+                        onPressed: cubit.toggleShuffle,
                         child: const Icon(Icons.shuffle, size: 18),
                       ),
                       TransportButton(
                         size: 44,
-                        onPressed: commands.previous,
+                        onPressed: cubit.previous,
                         child: const Icon(
                           Icons.skip_previous_rounded,
                           size: 28,
@@ -196,7 +197,7 @@ class _NowPlayingBody extends StatelessWidget {
                       TransportButton(
                         size: 60,
                         accent: true,
-                        onPressed: commands.playPause,
+                        onPressed: cubit.playPause,
                         child: Icon(
                           status.state == PlaybackState.playing
                               ? Icons.pause_rounded
@@ -206,7 +207,7 @@ class _NowPlayingBody extends StatelessWidget {
                       ),
                       TransportButton(
                         size: 44,
-                        onPressed: commands.next,
+                        onPressed: cubit.next,
                         child: const Icon(Icons.skip_next_rounded, size: 28),
                       ),
                       TransportButton(
@@ -214,7 +215,7 @@ class _NowPlayingBody extends StatelessWidget {
                         color: status.repeatMode != RepeatMode.off
                             ? AppColors.accent
                             : AppColors.text3,
-                        onPressed: commands.cycleRepeat,
+                        onPressed: cubit.cycleRepeat,
                         child: const Icon(Icons.repeat, size: 18),
                       ),
                     ],
@@ -223,8 +224,8 @@ class _NowPlayingBody extends StatelessWidget {
                   VolumeSlider(
                     value: status.volume,
                     isMuted: status.isMuted,
-                    onChanged: commands.setVolume,
-                    onMuteToggle: commands.toggleMute,
+                    onChanged: cubit.setVolume,
+                    onMuteToggle: cubit.toggleMute,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -251,9 +252,9 @@ class _NowPlayingBody extends StatelessWidget {
 
 class _ProgressSection extends StatelessWidget {
   final PlayerStatus status;
-  final PlayerCommandService commands;
+  final NowPlayingCubit cubit;
 
-  const _ProgressSection({required this.status, required this.commands});
+  const _ProgressSection({required this.status, required this.cubit});
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +272,7 @@ class _ProgressSection extends StatelessWidget {
           progress: progress,
           onChanged: (v) {
             final ms = (v * durationMs).round();
-            commands.seekTo(ms);
+            cubit.seekTo(ms);
           },
         ),
         Padding(
@@ -304,7 +305,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final commands = getIt<PlayerCommandService>();
+    final cubit = context.read<NowPlayingCubit>();
     return SafeArea(
       child: Column(
         children: [
@@ -351,8 +352,8 @@ class _EmptyState extends StatelessWidget {
             child: VolumeSlider(
               value: status?.volume ?? 0,
               isMuted: status?.isMuted ?? false,
-              onChanged: commands.setVolume,
-              onMuteToggle: commands.toggleMute,
+              onChanged: cubit.setVolume,
+              onMuteToggle: cubit.toggleMute,
             ),
           ),
         ],

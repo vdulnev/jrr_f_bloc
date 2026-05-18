@@ -20,7 +20,10 @@ class MiniPlayerPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<MiniPlayerCubit>(
-      create: (_) => MiniPlayerCubit(player: getIt<PlayerService>()),
+      create: (_) => MiniPlayerCubit(
+        player: getIt<PlayerService>(),
+        commands: getIt<PlayerCommandService>(),
+      ),
       child: BlocBuilder<MiniPlayerCubit, MiniPlayerState>(
         builder: (context, state) {
           return _Body(status: state.status, onItemTap: onItemTap);
@@ -38,7 +41,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final commands = getIt<PlayerCommandService>();
+    final cubit = context.read<MiniPlayerCubit>();
     final hasTracks = (status?.playingNowTracks ?? 0) > 0;
     final positionMs = status?.positionMs ?? 0;
     final durationMs = status?.durationMs ?? 0;
@@ -123,7 +126,7 @@ class _Body extends StatelessWidget {
                         children: [
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? commands.previous : null,
+                            onPressed: hasTracks ? cubit.previous : null,
                             child: const Icon(
                               Icons.skip_previous_rounded,
                               size: 20,
@@ -131,7 +134,7 @@ class _Body extends StatelessWidget {
                           ),
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? commands.playPause : null,
+                            onPressed: hasTracks ? cubit.playPause : null,
                             child: Icon(
                               isPlaying
                                   ? Icons.pause_rounded
@@ -141,7 +144,7 @@ class _Body extends StatelessWidget {
                           ),
                           TransportButton(
                             size: 36,
-                            onPressed: hasTracks ? commands.next : null,
+                            onPressed: hasTracks ? cubit.next : null,
                             child: const Icon(
                               Icons.skip_next_rounded,
                               size: 20,
@@ -155,8 +158,8 @@ class _Body extends StatelessWidget {
                   VolumeSlider(
                     value: status?.volume ?? 1.0,
                     isMuted: status?.isMuted ?? false,
-                    onChanged: commands.setVolume,
-                    onMuteToggle: commands.toggleMute,
+                    onChanged: cubit.setVolume,
+                    onMuteToggle: cubit.toggleMute,
                   ),
                 ],
               ),

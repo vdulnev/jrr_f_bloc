@@ -12,11 +12,9 @@ class BrowseItemTileCubit extends Cubit<bool> {
   final BrowseItem item;
   StreamSubscription<List<BrowseItem>>? _sub;
 
-  BrowseItemTileCubit({
-    required this.item,
-    required FavoritesService service,
-  }) : _service = service,
-       super(service.isFavorite(item)) {
+  BrowseItemTileCubit({required this.item, required FavoritesService service})
+    : _service = service,
+      super(service.isFavorite(item)) {
     _sub = _service.stream.listen((favs) {
       final next = favs.any((f) => f.id == item.id);
       if (next != state) emit(next);

@@ -39,9 +39,8 @@ class Sidebar extends StatelessWidget {
                 icon: Icons.album_outlined,
                 label: 'Now Playing',
                 isActive: active == AppTab.nowPlaying,
-                onTap: () => context
-                    .read<NavigationCubit>()
-                    .select(AppTab.nowPlaying),
+                onTap: () =>
+                    context.read<NavigationCubit>().select(AppTab.nowPlaying),
               ),
               _NavItem(
                 icon: Icons.queue_music_outlined,

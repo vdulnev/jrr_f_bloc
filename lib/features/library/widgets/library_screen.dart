@@ -40,8 +40,7 @@ class LibraryScreen extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) =>
-                ArtistsCubit(repository: getIt<LibraryRepository>()),
+            create: (_) => ArtistsCubit(repository: getIt<LibraryRepository>()),
           ),
           BlocProvider(
             create: (_) =>
@@ -53,10 +52,9 @@ class LibraryScreen extends StatelessWidget {
         ],
         child: BlocBuilder<LibraryCubit, LibraryState>(
           builder: (context, state) {
-            final tabs =
-                state.isOffline
-                    ? LibraryScreen._offlineTabs
-                    : LibraryScreen._allTabs;
+            final tabs = state.isOffline
+                ? LibraryScreen._offlineTabs
+                : LibraryScreen._allTabs;
             final activeIndex = state.activeTabIndex;
 
             return Scaffold(
@@ -91,20 +89,18 @@ class LibraryScreen extends StatelessWidget {
                                 for (var i = 0; i < tabs.length; i++)
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap:
-                                          () => context
-                                              .read<LibraryCubit>()
-                                              .setActiveTab(i),
+                                      onTap: () => context
+                                          .read<LibraryCubit>()
+                                          .setActiveTab(i),
                                       child: AnimatedContainer(
                                         duration: const Duration(
                                           milliseconds: 200,
                                         ),
                                         height: 32,
                                         decoration: BoxDecoration(
-                                          color:
-                                              activeIndex == i
-                                                  ? AppColors.bg4
-                                                  : Colors.transparent,
+                                          color: activeIndex == i
+                                              ? AppColors.bg4
+                                              : Colors.transparent,
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
@@ -120,10 +116,9 @@ class LibraryScreen extends StatelessWidget {
                                           textAlign: TextAlign.center,
                                           style: AppTextStyles.labelLarge
                                               .copyWith(
-                                                color:
-                                                    activeIndex == i
-                                                        ? AppColors.text
-                                                        : AppColors.text3,
+                                                color: activeIndex == i
+                                                    ? AppColors.text
+                                                    : AppColors.text3,
                                               ),
                                         ),
                                       ),
@@ -138,17 +133,16 @@ class LibraryScreen extends StatelessWidget {
                     Expanded(
                       child: IndexedStack(
                         index: activeIndex,
-                        children:
-                            state.isOffline
-                                ? const [DownloadsTab()]
-                                : const [
-                                  ArtistsTab(),
-                                  RandomTab(),
-                                  BrowseTab(),
-                                  SearchTab(),
-                                  FavoritesTab(),
-                                  DownloadsTab(),
-                                ],
+                        children: state.isOffline
+                            ? const [DownloadsTab()]
+                            : const [
+                                ArtistsTab(),
+                                RandomTab(),
+                                BrowseTab(),
+                                SearchTab(),
+                                FavoritesTab(),
+                                DownloadsTab(),
+                              ],
                       ),
                     ),
                   ],

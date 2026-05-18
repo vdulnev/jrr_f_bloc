@@ -26,10 +26,8 @@ class BrowseItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<BrowseItemTileCubit>(
       key: ValueKey('fav-${item.id}'),
-      create: (_) => BrowseItemTileCubit(
-        item: item,
-        service: getIt<FavoritesService>(),
-      ),
+      create: (_) =>
+          BrowseItemTileCubit(item: item, service: getIt<FavoritesService>()),
       child: _Tile(
         item: item,
         onTap: onTap,

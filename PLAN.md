@@ -8,6 +8,17 @@ identical.
 Reference spec: `../spec.md` (v0.7.0).
 Reference implementation: `../jrr_f/` (Riverpod, v2.7.0).
 
+> **Superseded by `REFACTOR_PLAN.md` for state-management ownership.**
+> This document captures the original Riverpod → BLoC port (Phases 0–11
+> complete). The follow-up refactor in `REFACTOR_PLAN.md` retires the
+> shared-state cubits/blocs listed in §6 in favour of GetIt-registered
+> services with per-widget companion cubits (Phases 1–12 complete).
+> Specifically retired: `SessionCubit`, `ZonesCubit`, `McwsPlayerBloc`,
+> `LocalPlayerCubit`, `PlayerCubit`, `PlayerControllerCubit`, `QueueCubit`,
+> `SearchByFileKeyCubit`, `FavoritesCubit`, `DownloadJobsCubit`,
+> `DownloadedTracksCubit`. Their service equivalents live alongside the
+> remaining widget-companion cubits — see `REFACTOR_PLAN.md` §5.
+
 ---
 
 ## 0. Architecture Rules (non-negotiable)

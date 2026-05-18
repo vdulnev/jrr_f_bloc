@@ -21,7 +21,9 @@ class ArtworkCubit extends Cubit<ArtworkState> {
   }) : _session = session,
        _repo = repository,
        super(_snapshot(session.state, repository)) {
-    _sub = _session.stream.listen((_) => emit(_snapshot(_session.state, _repo)));
+    _sub = _session.stream.listen(
+      (_) => emit(_snapshot(_session.state, _repo)),
+    );
   }
 
   static ArtworkState _snapshot(SessionState s, ConnectionRepository r) =>
