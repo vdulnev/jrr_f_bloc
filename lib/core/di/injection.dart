@@ -19,6 +19,8 @@ import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/library/track_lookup_service.dart';
 import '../../features/offline/data/repositories/downloads_repository.dart';
 import '../../features/offline/data/repositories/downloads_repository_impl.dart';
+import '../../features/offline/download_jobs_service.dart';
+import '../../features/offline/downloaded_tracks_service.dart';
 import '../../features/offline/services/download_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
@@ -107,6 +109,16 @@ Future<void> configureDependencies() async {
   // Favorites — owns the favorited-browse-nodes list.
   getIt.registerSingleton<FavoritesService>(
     FavoritesService(repository: getIt<FavoritesRepository>()),
+  );
+
+  // Download services — stream pipes off DownloadsRepository. Registered
+  // before LocalPlaybackService (Phase 7) which subscribes to the
+  // downloaded-tracks stream to reload the local queue on changes.
+  getIt.registerSingleton<DownloadJobsService>(
+    DownloadJobsService(repository: getIt<DownloadsRepository>()),
+  );
+  getIt.registerSingleton<DownloadedTracksService>(
+    DownloadedTracksService(repository: getIt<DownloadsRepository>()),
   );
 
   // ActiveZone — tracks which zone the user is targeting. Lives in the

@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../offline/bloc/download_jobs_cubit.dart';
 import '../../offline/bloc/download_status.dart';
-import '../../offline/bloc/downloaded_tracks_cubit.dart';
+import '../../offline/download_jobs_service.dart';
+import '../../offline/downloaded_tracks_service.dart';
 import '../../offline/data/models/download_job.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/data/models/downloaded_track.dart';
@@ -108,14 +108,22 @@ class _LibraryItemTileState extends State<LibraryItemTile> {
                 builder: (context, snap) {
                   final activeZone = snap.data ?? service.state;
                   final isOffline = activeZone?.isOffline == true;
-                  return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-                    builder: (context, downloaded) =>
-                        BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-                          builder: (context, jobs) {
+                  final tracks = getIt<DownloadedTracksService>();
+                  final jobs = getIt<DownloadJobsService>();
+                  return StreamBuilder<List<DownloadedTrack>>(
+                    stream: tracks.stream,
+                    initialData: tracks.state,
+                    builder: (context, dlSnap) =>
+                        StreamBuilder<List<DownloadJob>>(
+                          stream: jobs.stream,
+                          initialData: jobs.state,
+                          builder: (context, jobSnap) {
+                            final downloaded = dlSnap.data ?? tracks.state;
+                            final jobList = jobSnap.data ?? jobs.state;
                             final status = DownloadStatus.forTrack(
                               fileKey: item.fileKey,
                               downloaded: downloaded,
-                              jobs: jobs,
+                              jobs: jobList,
                             );
                             if (isOffline &&
                                 status != DownloadState.downloaded) {

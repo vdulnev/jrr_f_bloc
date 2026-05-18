@@ -1,14 +1,14 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/extensions/string_extensions.dart';
 import '../../../shared/widgets/sub_screen_header.dart';
 import '../../library/data/models/album.dart';
 import '../../library/widgets/album_row_tile.dart';
-import '../bloc/downloaded_tracks_cubit.dart';
 import '../data/models/downloaded_track.dart';
+import '../downloaded_tracks_service.dart';
 import 'downloaded_navigation.dart';
 
 List<Album> _albumsForArtist(List<DownloadedTrack> all, String artist) {
@@ -35,6 +35,7 @@ class DownloadedAlbumsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final service = getIt<DownloadedTracksService>();
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -45,8 +46,11 @@ class DownloadedAlbumsScreen extends StatelessWidget {
               onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
-              child: BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-                builder: (context, all) {
+              child: StreamBuilder<List<DownloadedTrack>>(
+                stream: service.stream,
+                initialData: service.state,
+                builder: (context, snap) {
+                  final all = snap.data ?? service.state;
                   final albums = _albumsForArtist(all, artist);
                   if (albums.isEmpty) return const _EmptyAlbums();
                   return ListView.builder(

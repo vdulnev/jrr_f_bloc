@@ -9,12 +9,12 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/logging/file_log_observer.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../offline/bloc/download_jobs_cubit.dart';
-import '../../offline/bloc/downloaded_tracks_cubit.dart';
 import '../../offline/data/models/download_job.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
+import '../../offline/download_jobs_service.dart';
+import '../../offline/downloaded_tracks_service.dart';
 import '../bloc/server_manager_cubit.dart';
 import '../bloc/server_manager_state.dart';
 import '../session_service.dart';
@@ -169,8 +169,12 @@ class _StorageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-      builder: (context, tracks) {
+    final service = getIt<DownloadedTracksService>();
+    return StreamBuilder<List<DownloadedTrack>>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final tracks = snap.data ?? service.state;
         final count = tracks.length;
         final totalBytes = tracks.fold<int>(
           0,
@@ -267,8 +271,12 @@ class _FailedDownloadsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-      builder: (context, jobs) {
+    final service = getIt<DownloadJobsService>();
+    return StreamBuilder<List<DownloadJob>>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final jobs = snap.data ?? service.state;
         final failed = jobs
             .where((j) => j.state == DownloadState.failed)
             .toList();

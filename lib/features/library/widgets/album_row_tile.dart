@@ -4,12 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/artwork_widget.dart';
-import '../../offline/bloc/download_jobs_cubit.dart';
-import '../../offline/bloc/downloaded_tracks_cubit.dart';
 import '../../offline/data/models/download_job.dart';
 import '../../offline/data/models/download_state.dart';
 import '../../offline/data/models/downloaded_track.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
+import '../../offline/download_jobs_service.dart';
+import '../../offline/downloaded_tracks_service.dart';
 import '../../offline/widgets/album_download_progress_indicator.dart';
 import '../../offline/widgets/confirm_delete_dialog.dart';
 import '../../offline/widgets/downloaded_navigation.dart';
@@ -58,10 +58,18 @@ class AlbumRowTile extends StatelessWidget {
       builder: (context, snap) {
         final activeZone = snap.data ?? service.state;
         final isOffline = activeZone?.isOffline == true;
-        return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-          builder: (context, downloaded) =>
-              BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-                builder: (context, jobs) {
+        final tracks = getIt<DownloadedTracksService>();
+        final jobsSvc = getIt<DownloadJobsService>();
+        return StreamBuilder<List<DownloadedTrack>>(
+          stream: tracks.stream,
+          initialData: tracks.state,
+          builder: (context, dlSnap) =>
+              StreamBuilder<List<DownloadJob>>(
+                stream: jobsSvc.stream,
+                initialData: jobsSvc.state,
+                builder: (context, jobSnap) {
+                  final downloaded = dlSnap.data ?? tracks.state;
+                  final jobs = jobSnap.data ?? jobsSvc.state;
                   final downloadedInAlbum = downloaded
                       .where((t) => t.albumGroupId == album.albumGroupId)
                       .toList();
@@ -323,7 +331,7 @@ class _Row extends StatelessWidget {
     final controller = context.read<PlayerControllerCubit>();
     final repo = getIt<DownloadsRepository>();
     final library = getIt<LibraryRepository>();
-    final downloads = context.read<DownloadedTracksCubit>().state;
+    final downloads = getIt<DownloadedTracksService>().state;
 
     Tracks? resolveAlbumTracks() {
       if (isOffline) {

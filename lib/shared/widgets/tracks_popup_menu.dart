@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/injection.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/library/data/models/tracks.dart';
-import '../../features/offline/bloc/download_jobs_cubit.dart';
-import '../../features/offline/bloc/downloaded_tracks_cubit.dart';
+import '../../features/offline/download_jobs_service.dart';
+import '../../features/offline/downloaded_tracks_service.dart';
 import '../../features/offline/data/models/download_job.dart';
 import '../../features/offline/data/models/download_state.dart';
 import '../../features/offline/data/models/downloaded_track.dart';
@@ -33,12 +33,21 @@ class TracksPopupMenu extends StatelessWidget {
       builder: (context, snap) {
         final activeZone = snap.data ?? service.state;
         final isOffline = activeZone?.isOffline == true;
-        return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-          builder: (context, downloaded) =>
-              BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-                builder: (context, jobs) =>
-                    _build(context, isOffline, downloaded, jobs),
-              ),
+        final tracks = getIt<DownloadedTracksService>();
+        final jobs = getIt<DownloadJobsService>();
+        return StreamBuilder<List<DownloadedTrack>>(
+          stream: tracks.stream,
+          initialData: tracks.state,
+          builder: (context, dlSnap) => StreamBuilder<List<DownloadJob>>(
+            stream: jobs.stream,
+            initialData: jobs.state,
+            builder: (context, jobSnap) => _build(
+              context,
+              isOffline,
+              dlSnap.data ?? tracks.state,
+              jobSnap.data ?? jobs.state,
+            ),
+          ),
         );
       },
     );

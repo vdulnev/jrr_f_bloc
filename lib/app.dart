@@ -12,8 +12,6 @@ import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
 import 'features/library/data/repositories/library_repository.dart';
-import 'features/offline/bloc/download_jobs_cubit.dart';
-import 'features/offline/bloc/downloaded_tracks_cubit.dart';
 import 'features/offline/data/repositories/downloads_repository.dart';
 import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/bloc/local_player_cubit.dart';
@@ -123,19 +121,6 @@ class _AppState extends State<App> {
           ),
         ),
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
-        // Download cubits expose stream-backed state used by tile chrome
-        // across the library — eager so tiles never render with stale
-        // "not downloaded" badges before the first emission.
-        BlocProvider<DownloadJobsCubit>(
-          lazy: false,
-          create: (_) =>
-              DownloadJobsCubit(repository: getIt<DownloadsRepository>()),
-        ),
-        BlocProvider<DownloadedTracksCubit>(
-          lazy: false,
-          create: (_) =>
-              DownloadedTracksCubit(repository: getIt<DownloadsRepository>()),
-        ),
       ],
       child: RepositoryProvider<PlayerControllerCubit>(
         create: (ctx) => PlayerControllerCubit(

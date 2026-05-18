@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../bloc/download_jobs_cubit.dart';
 import '../bloc/download_status.dart';
-import '../bloc/downloaded_tracks_cubit.dart';
 import '../data/models/download_job.dart';
 import '../data/models/download_state.dart';
 import '../data/models/downloaded_track.dart';
+import '../download_jobs_service.dart';
+import '../downloaded_tracks_service.dart';
 
 class DownloadProgressIndicator extends StatelessWidget {
   final int fileKey;
@@ -19,20 +19,30 @@ class DownloadProgressIndicator extends StatelessWidget {
     super.key,
   });
 
+  // Phase 4 wraps these two StreamBuilders into a single
+  // DownloadProgressCubit per indicator.
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-      builder: (context, downloaded) =>
-          BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-            builder: (context, jobs) {
+    final tracks = getIt<DownloadedTracksService>();
+    final jobs = getIt<DownloadJobsService>();
+    return StreamBuilder<List<DownloadedTrack>>(
+      stream: tracks.stream,
+      initialData: tracks.state,
+      builder: (context, dlSnap) =>
+          StreamBuilder<List<DownloadJob>>(
+            stream: jobs.stream,
+            initialData: jobs.state,
+            builder: (context, jobSnap) {
+              final downloaded = dlSnap.data ?? tracks.state;
+              final jobList = jobSnap.data ?? jobs.state;
               final status = DownloadStatus.forTrack(
                 fileKey: fileKey,
                 downloaded: downloaded,
-                jobs: jobs,
+                jobs: jobList,
               );
               final progress = DownloadStatus.progressForTrack(
                 fileKey: fileKey,
-                jobs: jobs,
+                jobs: jobList,
               );
 
               switch (status) {

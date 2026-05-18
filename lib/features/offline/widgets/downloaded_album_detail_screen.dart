@@ -1,13 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../library/bloc/library_async_state.dart';
 import '../../library/data/models/tracks.dart';
 import '../../library/widgets/track_list_scaffold.dart';
-import '../bloc/downloaded_tracks_cubit.dart';
 import '../data/models/downloaded_track.dart';
+import '../downloaded_tracks_service.dart';
 
 Tracks _tracksForGroup(List<DownloadedTrack> all, String albumGroupId) {
   final filtered =
@@ -31,8 +31,12 @@ class DownloadedAlbumDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-      builder: (context, all) {
+    final service = getIt<DownloadedTracksService>();
+    return StreamBuilder<List<DownloadedTrack>>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final all = snap.data ?? service.state;
         final tracks = _tracksForGroup(all, albumGroupId);
         final first = tracks.tracks.isNotEmpty ? tracks.tracks.first : null;
         return TrackListScaffold(

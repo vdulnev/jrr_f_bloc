@@ -5,9 +5,9 @@ import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../library/data/models/tracks.dart';
 import '../../player/bloc/player_controller_cubit.dart';
-import '../bloc/downloaded_tracks_cubit.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
+import '../downloaded_tracks_service.dart';
 import 'confirm_delete_dialog.dart';
 import 'downloaded_navigation.dart';
 
@@ -25,8 +25,12 @@ class DownloadedArtistsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadedTracksCubit, List<DownloadedTrack>>(
-      builder: (context, downloaded) {
+    final service = getIt<DownloadedTracksService>();
+    return StreamBuilder<List<DownloadedTrack>>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final downloaded = snap.data ?? service.state;
         final artists = _artistsFrom(downloaded);
         if (artists.isEmpty) return const _EmptyState();
         return CustomScrollView(

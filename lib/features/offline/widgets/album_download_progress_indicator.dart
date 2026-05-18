@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../bloc/download_jobs_cubit.dart';
 import '../bloc/download_status.dart';
 import '../data/models/download_job.dart';
 import '../data/models/download_state.dart';
+import '../download_jobs_service.dart';
 
 class AlbumDownloadProgressIndicator extends StatelessWidget {
   final String albumGroupId;
@@ -17,10 +17,15 @@ class AlbumDownloadProgressIndicator extends StatelessWidget {
     super.key,
   });
 
+  // Phase 4 wraps this in an AlbumDownloadProgressCubit per indicator.
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadJobsCubit, List<DownloadJob>>(
-      builder: (context, jobs) {
+    final service = getIt<DownloadJobsService>();
+    return StreamBuilder<List<DownloadJob>>(
+      stream: service.stream,
+      initialData: service.state,
+      builder: (context, snap) {
+        final jobs = snap.data ?? service.state;
         final status = DownloadStatus.forAlbum(
           albumGroupId: albumGroupId,
           jobs: jobs,

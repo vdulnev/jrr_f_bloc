@@ -250,7 +250,7 @@ appears in the Favorites tab. Analyzer + tests green.
   rows pick up the right state). The tile's body lives in a private
   `_Tile` widget that reads only the cubit — never the service.
 
-### Phase 3 — Download stream services (½ day)
+### Phase 3 — Download stream services (½ day) — ✅ done
 
 **Goal.** Retire `DownloadJobsCubit` and `DownloadedTracksCubit`.
 Both are pure pipes off `DownloadsRepository` streams.
@@ -259,13 +259,29 @@ Both are pure pipes off `DownloadsRepository` streams.
 - `lib/features/offline/download_jobs_service.dart`.
 - `lib/features/offline/downloaded_tracks_service.dart`.
 - Both registered in DI **before** `LocalPlaybackService` lands in
-  Phase 5.
-- Old cubit files deleted only **after** Phase 4 (downloaded tile
-  consumers).
+  Phase 7.
+- Old cubit files deleted in this phase along with all widget
+  consumers migrating to `StreamBuilder` reads of the service.
 
 **Acceptance.** Existing tile chrome (progress indicators, popup-menu
 entries) still works — wired temporarily via direct service reads /
 `StreamBuilder` until Phase 4 introduces tile cubits.
+
+**Notes (post-implementation).**
+- Services pipe `repository.watchJobs()` and
+  `repository.watchDownloadedTracks()` directly; subscriptions are
+  cancelled in `dispose()`. Initial `state` is `const []` until the
+  first emit.
+- Widget migrations (no companion cubits yet — those land in Phase 4):
+  `download_progress_indicator.dart`, `album_download_progress_indicator.dart`,
+  `library_item_tile.dart`, `album_row_tile.dart`, `tracks_popup_menu.dart`,
+  `server_manager_screen.dart` (storage + failed-downloads sections),
+  `downloaded_artists_screen.dart`, `downloaded_albums_screen.dart`,
+  `downloaded_album_detail_screen.dart`. All replaced
+  `BlocBuilder<…Cubit, …>` with `StreamBuilder<…>` driven by
+  `getIt<…Service>().stream` + `initialData: service.state`.
+- `app.dart` drops both `BlocProvider`s; the `DownloadsRepository`
+  import stays for `LocalPlayerCubit`'s constructor.
 
 ### Phase 4 — Download-aware tile / indicator companion cubits (1 day)
 
@@ -428,7 +444,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 |-------|----------------------------------------------------|----------|
 | 1     | TrackLookupService ✅                              | ½ day    |
 | 2     | FavoritesService ✅                                | ½ day    |
-| 3     | Download stream services                           | ½ day    |
+| 3     | Download stream services ✅                        | ½ day    |
 | 4     | Download-aware tile / indicator companion cubits   | 1 day    |
 | 5     | Downloaded screen companion cubits                 | ½ day    |
 | 6     | McwsPlayerService                                  | 1 day    |
