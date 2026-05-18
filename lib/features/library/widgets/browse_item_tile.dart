@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../favorites/bloc/favorites_cubit.dart';
+import '../../favorites/bloc/browse_item_tile_cubit.dart';
+import '../../favorites/favorites_service.dart';
 import '../data/models/browse_item.dart';
 
 /// Single browse-tree row with optional favorite toggle on the trailing
-/// edge. Watches [FavoritesCubit] so the heart updates live on toggle.
+/// edge. Bound to a per-instance [BrowseItemTileCubit] so the heart
+/// updates live as favorites change.
 class BrowseItemTile extends StatelessWidget {
   final BrowseItem item;
   final VoidCallback onTap;
@@ -21,9 +24,36 @@ class BrowseItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FavoritesCubit, List<BrowseItem>>(
-      builder: (context, favorites) {
-        final isFav = favorites.any((f) => f.id == item.id);
+    return BlocProvider<BrowseItemTileCubit>(
+      key: ValueKey('fav-${item.id}'),
+      create: (_) => BrowseItemTileCubit(
+        item: item,
+        service: getIt<FavoritesService>(),
+      ),
+      child: _Tile(
+        item: item,
+        onTap: onTap,
+        showFavoriteToggle: showFavoriteToggle,
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final BrowseItem item;
+  final VoidCallback onTap;
+  final bool showFavoriteToggle;
+
+  const _Tile({
+    required this.item,
+    required this.onTap,
+    required this.showFavoriteToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<BrowseItemTileCubit, bool>(
+      builder: (context, isFav) {
         return GestureDetector(
           onTap: onTap,
           child: Container(
@@ -67,7 +97,7 @@ class BrowseItemTile extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () =>
-                        context.read<FavoritesCubit>().toggle(item),
+                        context.read<BrowseItemTileCubit>().toggle(),
                   ),
                 ],
               ],

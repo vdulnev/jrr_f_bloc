@@ -13,6 +13,7 @@ import '../../features/connection/data/repositories/connection_repository_impl.d
 import '../../features/connection/session_service.dart';
 import '../../features/favorites/data/repositories/favorites_repository.dart';
 import '../../features/favorites/data/repositories/favorites_repository_impl.dart';
+import '../../features/favorites/favorites_service.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/library_repository_impl.dart';
 import '../../features/library/track_lookup_service.dart';
@@ -101,6 +102,11 @@ Future<void> configureDependencies() async {
   // header. Stateless apart from the last-resolved track snapshot.
   getIt.registerSingleton<TrackLookupService>(
     TrackLookupService(repository: getIt<LibraryRepository>()),
+  );
+
+  // Favorites — owns the favorited-browse-nodes list.
+  getIt.registerSingleton<FavoritesService>(
+    FavoritesService(repository: getIt<FavoritesRepository>()),
   );
 
   // ActiveZone — tracks which zone the user is targeting. Lives in the

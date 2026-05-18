@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../favorites/bloc/favorites_cubit.dart';
+import '../../favorites/bloc/favorites_tab_cubit.dart';
+import '../../favorites/favorites_service.dart';
 import '../bloc/browse_navigation_cubit.dart';
 import '../data/models/browse_item.dart';
 import 'browse_breadcrumb.dart';
@@ -14,8 +16,16 @@ class FavoritesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => BrowseNavigationCubit(scope: BrowseScope.favorites),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => BrowseNavigationCubit(scope: BrowseScope.favorites),
+        ),
+        BlocProvider(
+          create: (_) =>
+              FavoritesTabCubit(service: getIt<FavoritesService>()),
+        ),
+      ],
       child: const _Body(),
     );
   }
@@ -29,7 +39,7 @@ class _Body extends StatelessWidget {
     return BlocBuilder<BrowseNavigationCubit, List<BrowseItem>>(
       builder: (context, stack) {
         if (stack.isEmpty) {
-          return BlocBuilder<FavoritesCubit, List<BrowseItem>>(
+          return BlocBuilder<FavoritesTabCubit, List<BrowseItem>>(
             builder: (context, favorites) {
               if (favorites.isEmpty) return const _EmptyState();
               return CustomScrollView(

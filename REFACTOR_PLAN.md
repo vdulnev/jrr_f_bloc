@@ -221,7 +221,7 @@ change. Analyzer + tests green.
   `NowPlayingScreen.build` now points to Phase 8 for the single-cubit
   fix.
 
-### Phase 2 — `FavoritesService` (½ day)
+### Phase 2 — `FavoritesService` (½ day) — ✅ done
 
 **Goal.** Retire `FavoritesCubit`. Favorites tab + browse-item heart
 toggle observe the service.
@@ -238,6 +238,17 @@ toggle observe the service.
 
 **Acceptance.** Toggle a favorite from anywhere in the browse tree → it
 appears in the Favorites tab. Analyzer + tests green.
+
+**Notes (post-implementation).**
+- Service de-dupes redundant emissions via a structural `_listEquals`
+  comparing browse-item IDs.
+- `FavoritesTabCubit` is scoped inside `FavoritesTab` (via the tab's
+  `MultiBlocProvider`), not at the root — favorites state survives
+  rebuilds within the tab but isn't kept alive globally; the service
+  is the source of truth.
+- `BrowseItemTileCubit` is per-tile (keyed `fav-${item.id}` so reused
+  rows pick up the right state). The tile's body lives in a private
+  `_Tile` widget that reads only the cubit — never the service.
 
 ### Phase 3 — Download stream services (½ day)
 
@@ -416,7 +427,7 @@ input methods. Every cubit pairs to exactly one widget by name.
 | Phase | Title                                              | Effort   |
 |-------|----------------------------------------------------|----------|
 | 1     | TrackLookupService ✅                              | ½ day    |
-| 2     | FavoritesService                                   | ½ day    |
+| 2     | FavoritesService ✅                                | ½ day    |
 | 3     | Download stream services                           | ½ day    |
 | 4     | Download-aware tile / indicator companion cubits   | 1 day    |
 | 5     | Downloaded screen companion cubits                 | ½ day    |
