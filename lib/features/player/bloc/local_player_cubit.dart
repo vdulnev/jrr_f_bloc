@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/di/injection.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
+import '../../offline/data/models/downloaded_track.dart';
+import '../../offline/data/repositories/downloads_repository.dart';
 import '../../queue/data/repositories/local_queue_repository.dart';
 import '../../zones/bloc/active_zone_cubit.dart';
 import '../../zones/data/models/zone.dart';
@@ -45,6 +47,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   final LocalPlayerService _service;
   final ActiveZoneCubit _activeZone;
   final LocalQueueRepository _queueRepo;
+  final DownloadsRepository _downloadsRepo;
   final SharedPreferences _prefs;
   final Talker _talker;
 
@@ -57,6 +60,10 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
   StreamSubscription<SequenceState?>? _persistSub;
   StreamSubscription<Duration>? _persistPositionSub;
   StreamSubscription<double>? _persistVolumeSub;
+  StreamSubscription<List<DownloadedTrack>>? _downloadsSub;
+  Set<int>? _lastDownloadedKeys;
+  bool _isReloading = false;
+  bool _reloadQueuedDuringReload = false;
 
   Duration _position = Duration.zero;
   Duration? _duration = Duration.zero;
@@ -71,11 +78,13 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     required LocalPlayerService service,
     required ActiveZoneCubit activeZone,
     required LocalQueueRepository queueRepository,
+    required DownloadsRepository downloadsRepository,
     required SharedPreferences prefs,
     required Talker talker,
   }) : _service = service,
        _activeZone = activeZone,
        _queueRepo = queueRepository,
+       _downloadsRepo = downloadsRepository,
        _prefs = prefs,
        _talker = talker,
        super(const PlayerSnapshot.data(status: null)) {
@@ -125,7 +134,8 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     // on first load, so guard against echoing it back to storage.
     _persistSub = _service.sequenceStateStream.listen((seq) async {
       if (_currentZoneKey.isEmpty) return;
-      final keys = seq?.sequence
+      final keys =
+          seq?.sequence
               .map((s) => s.tag)
               .whereType<Track>()
               .map((t) => t.fileKey)
@@ -138,10 +148,8 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
       _lastSavedKeys = List.of(keys);
       _lastSavedIndex = index;
       final tracks = Tracks(
-        tracks: seq?.sequence
-                .map((s) => s.tag)
-                .whereType<Track>()
-                .toList() ??
+        tracks:
+            seq?.sequence.map((s) => s.tag).whereType<Track>().toList() ??
             const <Track>[],
       );
       await _queueRepo.setTracks(_currentZoneKey, tracks);
@@ -157,8 +165,96 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
       _prefs.setDouble(_kVolumePref, vol);
     });
 
+    // When a download finishes (or is removed), tracks already in the
+    // queue may need to swap streaming URLs ↔ local files. We only
+    // reload if the current queue overlaps with the changed set.
+    _downloadsSub = _downloadsRepo.watchDownloadedTracks().listen((tracks) {
+      _onDownloadsChanged(tracks);
+    });
+
     _onZoneChanged(_activeZone.state);
     _recompute();
+  }
+
+  void _onDownloadsChanged(List<DownloadedTrack> downloaded) {
+    final next = downloaded.map((t) => t.fileKey).toSet();
+    final prev = _lastDownloadedKeys;
+    _lastDownloadedKeys = next;
+    if (prev == null) return; // First snapshot — nothing to reload yet.
+
+    final added = next.difference(prev);
+    final removed = prev.difference(next);
+    if (added.isEmpty && removed.isEmpty) return;
+
+    final queueKeys = _service.sequence
+        .map((s) => s.tag)
+        .whereType<Track>()
+        .map((t) => t.fileKey)
+        .toSet();
+    if (queueKeys.isEmpty) return;
+
+    final addedRelevant = added.intersection(queueKeys);
+    final removedRelevant = removed.intersection(queueKeys);
+    if (addedRelevant.isEmpty && removedRelevant.isEmpty) return;
+
+    if (_currentZoneKey == 'offline' && removedRelevant.isNotEmpty) {
+      _talker.info(
+        '[LocalPlayerCubit] [offline] ${removedRelevant.length} deleted '
+        '— dropping from queue (no streaming fallback)',
+      );
+      _removeFromQueue(removedRelevant);
+      return;
+    }
+
+    _talker.info(
+      '[LocalPlayerCubit] [$_currentZoneKey] downloads changed '
+      '(+${addedRelevant.length} / -${removedRelevant.length}) — reloading queue',
+    );
+    unawaited(_reloadQueueWithCurrentState());
+  }
+
+  Future<void> _removeFromQueue(Set<int> fileKeys) async {
+    final sequence = _service.sequence;
+    for (var i = sequence.length - 1; i >= 0; i--) {
+      final tag = sequence[i].tag;
+      if (tag is Track && fileKeys.contains(tag.fileKey)) {
+        await _service.removeTrack(i);
+      }
+    }
+  }
+
+  /// Tears down and re-loads the current queue so newly-downloaded tracks
+  /// switch from streaming URLs to local files (and removed downloads
+  /// switch back to streaming, when online). Coalesced so a burst of
+  /// downloads triggers at most one in-flight reload.
+  Future<void> _reloadQueueWithCurrentState() async {
+    if (_isReloading) {
+      _reloadQueuedDuringReload = true;
+      return;
+    }
+    _isReloading = true;
+    try {
+      final seq = _sequenceState;
+      if (seq == null) return;
+      final wasPlaying = _playerState.playing;
+      final currentIndex = seq.currentIndex ?? -1;
+      final currentPositionMs = _position.inMilliseconds;
+      final tracks = Tracks(
+        tracks: seq.sequence.map((s) => s.tag).whereType<Track>().toList(),
+      );
+      await _service.stop();
+      await _service.setTracks(tracks);
+      if (currentIndex >= 0 && currentIndex < tracks.length) {
+        await _service.seekTo(currentPositionMs, index: currentIndex);
+      }
+      if (wasPlaying) await _service.play();
+    } finally {
+      _isReloading = false;
+      if (_reloadQueuedDuringReload) {
+        _reloadQueuedDuringReload = false;
+        scheduleMicrotask(_reloadQueueWithCurrentState);
+      }
+    }
   }
 
   Future<void> _onZoneChanged(Zone? zone) async {
@@ -262,8 +358,9 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
       positionDisplay: _fmt(_position),
       playingNowPosition: currentIndex,
       playingNowTracks: sequence.length,
-      playingNowPositionDisplay:
-          currentIndex > -1 ? '${currentIndex + 1} of ${sequence.length}' : '',
+      playingNowPositionDisplay: currentIndex > -1
+          ? '${currentIndex + 1} of ${sequence.length}'
+          : '',
       playingNowChangeCounter: 0,
       volume: _volume,
       volumeDisplay: '${(_volume * 100).toInt()}%',
@@ -273,8 +370,9 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
       album: currentTrack?.album ?? '',
       imageUrl: currentTrack?.imageUrl ?? '',
       status: statusText,
-      shuffleMode:
-          (seq?.shuffleModeEnabled ?? false) ? ShuffleMode.on : ShuffleMode.off,
+      shuffleMode: (seq?.shuffleModeEnabled ?? false)
+          ? ShuffleMode.on
+          : ShuffleMode.off,
       repeatMode: switch (seq?.loopMode ?? LoopMode.off) {
         LoopMode.off => RepeatMode.off,
         LoopMode.one => RepeatMode.track,
@@ -314,8 +412,8 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
 
   @override
   Future<void> toggleMute() async {
-    final muted = state is PlayerData &&
-        (state as PlayerData).status?.isMuted == true;
+    final muted =
+        state is PlayerData && (state as PlayerData).status?.isMuted == true;
     await _service.setMute(!muted);
   }
 
@@ -375,6 +473,7 @@ class LocalPlayerCubit extends Cubit<PlayerSnapshot>
     await _persistSub?.cancel();
     await _persistPositionSub?.cancel();
     await _persistVolumeSub?.cancel();
+    await _downloadsSub?.cancel();
     return super.close();
   }
 }

@@ -53,8 +53,7 @@ class _AppState extends State<App> {
           ),
         ),
         BlocProvider<ActiveZoneCubit>(
-          create: (_) =>
-              ActiveZoneCubit(prefs: getIt(), talker: getIt()),
+          create: (_) => ActiveZoneCubit(prefs: getIt(), talker: getIt()),
         ),
         BlocProvider<ZonesCubit>(
           create: (ctx) => ZonesCubit(
@@ -81,6 +80,7 @@ class _AppState extends State<App> {
             service: getIt<LocalPlayerService>(),
             activeZone: ctx.read<ActiveZoneCubit>(),
             queueRepository: getIt<LocalQueueRepository>(),
+            downloadsRepository: getIt<DownloadsRepository>(),
             prefs: getIt(),
             talker: getIt(),
           ),
@@ -116,9 +116,8 @@ class _AppState extends State<App> {
               DownloadJobsCubit(repository: getIt<DownloadsRepository>()),
         ),
         BlocProvider<DownloadedTracksCubit>(
-          create: (_) => DownloadedTracksCubit(
-            repository: getIt<DownloadsRepository>(),
-          ),
+          create: (_) =>
+              DownloadedTracksCubit(repository: getIt<DownloadsRepository>()),
         ),
       ],
       child: RepositoryProvider<PlayerControllerCubit>(
