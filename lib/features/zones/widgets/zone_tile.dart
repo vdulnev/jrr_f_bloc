@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../player/bloc/local_audio_quality_cubit.dart';
+import '../../player/data/models/local_audio_quality.dart';
 import '../data/models/zone.dart';
 
-/// A single row in the zone list. The play/pause indicator and the
-/// audio-quality popup depend on PlayerCubit / LocalAudioQualityCubit and
-/// are wired in Phase 5.
+/// A single row in the zone list.
 class ZoneTile extends StatelessWidget {
   final Zone zone;
   final bool isActive;
@@ -63,9 +64,22 @@ class ZoneTile extends StatelessWidget {
                   if (_subtitle(zone) != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        _subtitle(zone)!,
-                        style: AppTextStyles.monoLabel,
+                      child: Row(
+                        children: [
+                          Text(
+                            _subtitle(zone)!,
+                            style: AppTextStyles.monoLabel,
+                          ),
+                          // Audio-quality popup applies to any zone that
+                          // streams through the local just_audio handler —
+                          // Local and Android Auto.
+                          if (zone.isLocal || zone.isAndroidAuto) ...[
+                            const SizedBox(width: 6),
+                            const Text('·', style: AppTextStyles.monoLabel),
+                            const SizedBox(width: 6),
+                            const _QualityPopup(),
+                          ],
+                        ],
                       ),
                     ),
                 ],
@@ -103,5 +117,35 @@ class ZoneTile extends StatelessWidget {
     if (z.isOffline) return 'OFFLINE';
     if (z.isDLNA) return 'DLNA';
     return null;
+  }
+}
+
+class _QualityPopup extends StatelessWidget {
+  const _QualityPopup();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LocalAudioQualityCubit, LocalAudioQuality>(
+      builder: (context, current) => PopupMenuButton<LocalAudioQuality>(
+        tooltip: 'Audio quality',
+        padding: EdgeInsets.zero,
+        onSelected: (q) => context.read<LocalAudioQualityCubit>().set(q),
+        itemBuilder: (_) => [
+          for (final q in LocalAudioQuality.values)
+            CheckedPopupMenuItem(
+              value: q,
+              checked: q == current,
+              child: Text(q.label),
+            ),
+        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(current.label, style: AppTextStyles.monoLabel),
+            const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.text3),
+          ],
+        ),
+      ),
+    );
   }
 }
