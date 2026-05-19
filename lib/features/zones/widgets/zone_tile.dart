@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../player/audio_quality_service.dart';
 import '../../player/bloc/local_audio_quality_cubit.dart';
 import '../../player/data/models/local_audio_quality.dart';
 import '../data/models/zone.dart';
@@ -125,25 +127,33 @@ class _QualityPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LocalAudioQualityCubit, LocalAudioQuality>(
-      builder: (context, current) => PopupMenuButton<LocalAudioQuality>(
-        tooltip: 'Audio quality',
-        padding: EdgeInsets.zero,
-        onSelected: (q) => context.read<LocalAudioQualityCubit>().set(q),
-        itemBuilder: (_) => [
-          for (final q in LocalAudioQuality.values)
-            CheckedPopupMenuItem(
-              value: q,
-              checked: q == current,
-              child: Text(q.label),
-            ),
-        ],
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(current.label, style: AppTextStyles.monoLabel),
-            const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.text3),
+    return BlocProvider<LocalAudioQualityCubit>(
+      create: (_) =>
+          LocalAudioQualityCubit(service: getIt<AudioQualityService>()),
+      child: BlocBuilder<LocalAudioQualityCubit, LocalAudioQuality>(
+        builder: (context, current) => PopupMenuButton<LocalAudioQuality>(
+          tooltip: 'Audio quality',
+          padding: EdgeInsets.zero,
+          onSelected: (q) => context.read<LocalAudioQualityCubit>().set(q),
+          itemBuilder: (_) => [
+            for (final q in LocalAudioQuality.values)
+              CheckedPopupMenuItem(
+                value: q,
+                checked: q == current,
+                child: Text(q.label),
+              ),
           ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(current.label, style: AppTextStyles.monoLabel),
+              const Icon(
+                Icons.arrow_drop_down,
+                size: 16,
+                color: AppColors.text3,
+              ),
+            ],
+          ),
         ),
       ),
     );

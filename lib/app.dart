@@ -10,8 +10,6 @@ import 'features/connection/bloc/artwork_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
-import 'features/player/audio_quality_service.dart';
-import 'features/player/bloc/local_audio_quality_cubit.dart';
 import 'features/player/mcws_player_service.dart';
 import 'features/zones/zones_service.dart';
 
@@ -37,10 +35,6 @@ class _AppState extends State<App> {
             session: getIt<SessionService>(),
             repository: getIt<ConnectionRepository>(),
           ),
-        ),
-        BlocProvider<LocalAudioQualityCubit>(
-          create: (_) =>
-              LocalAudioQualityCubit(service: getIt<AudioQualityService>()),
         ),
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
       ],
