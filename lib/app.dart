@@ -7,7 +7,6 @@ import 'core/router/app_router.dart';
 import 'core/router/navigation_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'features/connection/bloc/artwork_cubit.dart';
-import 'features/connection/bloc/root_cubit.dart';
 import 'features/connection/data/repositories/connection_repository.dart';
 import 'features/connection/session_service.dart';
 import 'features/library/bloc/library_chrome_cubit.dart';
@@ -30,13 +29,6 @@ class _AppState extends State<App> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<NavigationCubit>(create: (_) => NavigationCubit()),
-        // RootScreen's companion — observes SessionService and emits
-        // SessionState so the root router never touches the service
-        // directly.
-        BlocProvider<RootCubit>(
-          lazy: false,
-          create: (_) => RootCubit(session: getIt<SessionService>()),
-        ),
         // Connection snapshot used by ArtworkWidget to compose image URLs.
         BlocProvider<ArtworkCubit>(
           lazy: false,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../di/injection.dart';
+import '../../features/connection/session_service.dart';
 import '../../features/connection/bloc/root_cubit.dart';
 import '../../features/connection/bloc/session_state.dart';
 import '../../features/connection/widgets/server_setup_screen.dart';
@@ -20,12 +21,19 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RootCubit, SessionState>(
-      builder: (context, state) => switch (state) {
-        Restoring() => const Scaffold(body: LoadingView()),
-        Unauthenticated() => const ServerSetupScreen(),
-        Authenticated() => const _AuthenticatedShell(),
-      },
+    // RootScreen's companion — observes SessionService and emits
+    // SessionState so the root router never touches the service
+    // directly.
+    return BlocProvider<RootCubit>(
+      lazy: false,
+      create: (_) => RootCubit(session: getIt<SessionService>()),
+      child: BlocBuilder<RootCubit, SessionState>(
+        builder: (context, state) => switch (state) {
+          Restoring() => const Scaffold(body: LoadingView()),
+          Unauthenticated() => const ServerSetupScreen(),
+          Authenticated() => const _AuthenticatedShell(),
+        },
+      ),
     );
   }
 }
