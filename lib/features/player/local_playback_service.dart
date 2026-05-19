@@ -313,7 +313,9 @@ class LocalPlaybackService implements PlayerController {
     }
 
     final savedVolume = _prefs.getDouble(_kVolumePref);
-    if (savedVolume != null) await _service.setVolume(savedVolume);
+    if (savedVolume != null) {
+      await _service.setVolume(savedVolume.clamp(0.0, 1.0));
+    }
   }
 
   static bool _listEquals(List<int>? a, List<int>? b) {

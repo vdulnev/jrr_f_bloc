@@ -29,6 +29,13 @@ class _VolumeSliderState extends State<VolumeSlider> {
 
   @override
   Widget build(BuildContext context) {
+    // MCWS returns Volume = -1 for sources where software volume is
+    // bypassed (DSD bitstream). Hide the control rather than render a
+    // misleading 0%.
+    if (!widget.value.isFinite || widget.value < 0) {
+      return const SizedBox.shrink();
+    }
+
     final color = widget.isMuted ? AppColors.text3 : AppColors.accent;
 
     return Row(
@@ -69,60 +76,68 @@ class _VolumeSliderState extends State<VolumeSlider> {
             },
             child: SizedBox(
               height: 32,
-              child: Center(
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.bg4,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth * widget.value;
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned(
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: width,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(2),
-                                color: color,
-                              ),
-                            ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxWidth = constraints.maxWidth.clamp(
+                    0.0,
+                    double.infinity,
+                  );
+                  final value = widget.value.isFinite
+                      ? widget.value.clamp(0.0, 1.0)
+                      : 0.0;
+                  final width = maxWidth * value;
+                  final knobSize = 16 * (_dragging ? 1.2 : 1.0);
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 14,
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.bg4,
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                          Positioned(
-                            left: width - (8 * (_dragging ? 1.2 : 1.0)),
-                            top: -6 * (_dragging ? 1.2 : 1.0),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 100),
-                              width: 16 * (_dragging ? 1.2 : 1.0),
-                              height: 16 * (_dragging ? 1.2 : 1.0),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.text,
-                                border: Border.all(
-                                  color: AppColors.bg1,
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        top: 14,
+                        width: width,
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
+                        ),
+                      ),
+                      Positioned(
+                        left: width - knobSize / 2,
+                        top: (32 - knobSize) / 2,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 100),
+                          width: knobSize,
+                          height: knobSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.text,
+                            border: Border.all(color: AppColors.bg1, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
