@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/connection/widgets/server_manager_screen.dart';
+import '../../features/library/bloc/library_chrome_cubit.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
@@ -33,12 +34,24 @@ class NarrowShell extends StatelessWidget {
               ),
             ),
             if (tab != AppTab.nowPlaying)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                child: MiniPlayerPanel(
-                  onItemTap: () =>
-                      context.read<NavigationCubit>().select(AppTab.nowPlaying),
-                ),
+              BlocBuilder<LibraryChromeCubit, bool>(
+                builder: (context, chromeVisible) {
+                  return AnimatedSize(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.topCenter,
+                    child: chromeVisible
+                        ? Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                            child: MiniPlayerPanel(
+                              onItemTap: () => context
+                                  .read<NavigationCubit>()
+                                  .select(AppTab.nowPlaying),
+                            ),
+                          )
+                        : const SizedBox(width: double.infinity),
+                  );
+                },
               ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../bloc/browse_navigation_cubit.dart';
 import '../data/models/browse_item.dart';
 import 'browse_breadcrumb.dart';
@@ -47,9 +48,11 @@ class _BrowseScaffold extends StatelessWidget {
                     .navigateToBreadcrumb(i),
               ),
               Expanded(
-                child: BrowseContent(
-                  key: ValueKey(current.id),
-                  current: current,
+                child: ScrollChromeListener(
+                  child: BrowseContent(
+                    key: ValueKey(current.id),
+                    current: current,
+                  ),
                 ),
               ),
             ],

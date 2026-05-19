@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/connection/widgets/server_manager_screen.dart';
+import '../../features/library/bloc/library_chrome_cubit.dart';
 import '../../features/library/widgets/library_screen.dart';
 import '../../features/player/widgets/mini_player_panel.dart';
 import '../../features/player/widgets/now_playing_screen.dart';
@@ -44,16 +45,30 @@ class _MainPanel extends StatelessWidget {
       children: [
         Expanded(child: _ContentArea(activeTab: activeTab)),
         if (showMiniPlayer)
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.bg1,
-              border: Border(top: BorderSide(color: AppColors.line)),
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: MiniPlayerPanel(
-              onItemTap: () =>
-                  context.read<NavigationCubit>().select(AppTab.nowPlaying),
-            ),
+          BlocBuilder<LibraryChromeCubit, bool>(
+            builder: (context, chromeVisible) {
+              return AnimatedSize(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: chromeVisible
+                    ? Container(
+                        decoration: const BoxDecoration(
+                          color: AppColors.bg1,
+                          border: Border(
+                            top: BorderSide(color: AppColors.line),
+                          ),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        child: MiniPlayerPanel(
+                          onItemTap: () => context
+                              .read<NavigationCubit>()
+                              .select(AppTab.nowPlaying),
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              );
+            },
           ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../player/player_command_service.dart';
 import '../bloc/downloaded_artists_cubit.dart';
 import '../data/models/downloaded_track.dart';
@@ -25,17 +26,19 @@ class DownloadedArtistsScreen extends StatelessWidget {
       child: BlocBuilder<DownloadedArtistsCubit, DownloadedArtistsState>(
         builder: (context, state) {
           if (state.isEmpty) return const _EmptyState();
-          return CustomScrollView(
-            slivers: [
-              SliverList.builder(
-                itemCount: state.length,
-                itemBuilder: (_, i) => _ArtistRow(
-                  artist: state[i].artist,
-                  tracks: state[i].tracks,
+          return ScrollChromeListener(
+            child: CustomScrollView(
+              slivers: [
+                SliverList.builder(
+                  itemCount: state.length,
+                  itemBuilder: (_, i) => _ArtistRow(
+                    artist: state[i].artist,
+                    tracks: state[i].tracks,
+                  ),
                 ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-            ],
+                const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+              ],
+            ),
           );
         },
       ),

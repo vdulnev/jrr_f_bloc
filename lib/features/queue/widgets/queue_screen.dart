@@ -5,6 +5,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../../shared/widgets/vu_meter.dart';
 import '../../library/data/models/track.dart';
 import '../../library/data/models/tracks.dart';
@@ -96,33 +97,33 @@ class _DataView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: _Header(tracks: items, onClearTap: onClearTap),
-        ),
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
+    return ScrollChromeListener(
+      child: CustomScrollView(
+        slivers: [
+          _QueueSliverAppBar(tracks: items, onClearTap: onClearTap),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
+            ),
           ),
-        ),
-        SliverList.builder(
-          itemCount: items.length,
-          itemBuilder: (context, i) {
-            final track = items[i];
-            return _Track(
-              key: ValueKey('${track.fileKey}_$i'),
-              track: track,
-              isCurrent: i == currentIndex,
-              onTap: () => onTap(i),
-              onDismissed: () => onRemove(i),
-              index: i,
-            );
-          },
-        ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-      ],
+          SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) {
+              final track = items[i];
+              return _Track(
+                key: ValueKey('${track.fileKey}_$i'),
+                track: track,
+                isCurrent: i == currentIndex,
+                onTap: () => onTap(i),
+                onDismissed: () => onRemove(i),
+                index: i,
+              );
+            },
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+        ],
+      ),
     );
   }
 }
@@ -135,94 +136,104 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: _Header(tracks: tracks, onClearTap: onClearTap),
-        ),
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
+    return ScrollChromeListener(
+      child: CustomScrollView(
+        slivers: [
+          _QueueSliverAppBar(tracks: tracks, onClearTap: onClearTap),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('UP NEXT', style: AppTextStyles.sectionHeading),
+            ),
           ),
-        ),
-        const SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: Text('Queue is empty', style: AppTextStyles.emptyState),
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text('Queue is empty', style: AppTextStyles.emptyState),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.tracks, required this.onClearTap});
+class _QueueSliverAppBar extends StatelessWidget {
+  const _QueueSliverAppBar({required this.tracks, required this.onClearTap});
 
   final Tracks tracks;
   final VoidCallback onClearTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('PLAYBACK', style: AppTextStyles.sectionLabel),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text('Queue', style: AppTextStyles.screenTitle),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    '${tracks.length} tracks',
-                    style: AppTextStyles.monoLabel,
-                  ),
-                  if (tracks.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: onClearTap,
-                      borderRadius: BorderRadius.circular(6),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.delete_sweep_outlined,
-                              size: 16,
-                              color: AppColors.text2,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'CLEAR',
-                              style: TextStyle(
-                                fontFamily: AppFonts.mono,
-                                fontSize: 11,
-                                letterSpacing: 1.5,
+    return SliverAppBar(
+      backgroundColor: AppColors.bg1,
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      pinned: false,
+      floating: true,
+      snap: true,
+      toolbarHeight: 96,
+      flexibleSpace: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('PLAYBACK', style: AppTextStyles.sectionLabel),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text('Queue', style: AppTextStyles.screenTitle),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${tracks.length} tracks',
+                      style: AppTextStyles.monoLabel,
+                    ),
+                    if (tracks.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: onClearTap,
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.delete_sweep_outlined,
+                                size: 16,
                                 color: AppColors.text2,
                               ),
-                            ),
-                          ],
+                              SizedBox(width: 4),
+                              Text(
+                                'CLEAR',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.mono,
+                                  fontSize: 11,
+                                  letterSpacing: 1.5,
+                                  color: AppColors.text2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            ],
-          ),
-        ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

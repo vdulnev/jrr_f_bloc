@@ -5,6 +5,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../zones/active_zone_service.dart';
 import '../bloc/artists_cubit.dart';
+import '../bloc/library_chrome_cubit.dart';
 import '../bloc/library_cubit.dart';
 import '../bloc/library_state.dart';
 import '../bloc/random_albums_cubit.dart';
@@ -63,71 +64,18 @@ class LibraryScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'LIBRARY',
-                            style: AppTextStyles.sectionLabel,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            state.isOffline ? 'Offline' : 'Browse',
-                            style: AppTextStyles.screenTitle,
-                          ),
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: AppColors.bg2,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < tabs.length; i++)
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => context
-                                          .read<LibraryCubit>()
-                                          .setActiveTab(i),
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: activeIndex == i
-                                              ? AppColors.bg4
-                                              : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                        ),
-                                        child: Text(
-                                          tabs[i],
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          style: AppTextStyles.labelLarge
-                                              .copyWith(
-                                                color: activeIndex == i
-                                                    ? AppColors.text
-                                                    : AppColors.text3,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    BlocBuilder<LibraryChromeCubit, bool>(
+                      builder: (context, chromeVisible) => AnimatedSize(
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOut,
+                        alignment: Alignment.topCenter,
+                        child: chromeVisible
+                            ? _Header(
+                                tabs: tabs,
+                                activeIndex: activeIndex,
+                                isOffline: state.isOffline,
+                              )
+                            : const SizedBox(width: double.infinity),
                       ),
                     ),
                     Expanded(
@@ -151,6 +99,77 @@ class LibraryScreen extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  final List<String> tabs;
+  final int activeIndex;
+  final bool isOffline;
+
+  const _Header({
+    required this.tabs,
+    required this.activeIndex,
+    required this.isOffline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('LIBRARY', style: AppTextStyles.sectionLabel),
+          const SizedBox(height: 6),
+          Text(
+            isOffline ? 'Offline' : 'Browse',
+            style: AppTextStyles.screenTitle,
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.bg2,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                for (var i = 0; i < tabs.length; i++)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => context.read<LibraryCubit>().setActiveTab(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: activeIndex == i
+                              ? AppColors.bg4
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          tabs[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: activeIndex == i
+                                ? AppColors.text
+                                : AppColors.text3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

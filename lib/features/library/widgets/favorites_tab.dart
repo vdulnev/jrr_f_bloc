@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../favorites/bloc/favorites_tab_cubit.dart';
 import '../../favorites/favorites_service.dart';
 import '../bloc/browse_navigation_cubit.dart';
@@ -41,22 +42,24 @@ class _Body extends StatelessWidget {
           return BlocBuilder<FavoritesTabCubit, List<BrowseItem>>(
             builder: (context, favorites) {
               if (favorites.isEmpty) return const _EmptyState();
-              return CustomScrollView(
-                slivers: [
-                  SliverList.builder(
-                    itemCount: favorites.length,
-                    itemBuilder: (_, i) {
-                      final item = favorites[i];
-                      return BrowseItemTile(
-                        item: item,
-                        showFavoriteToggle: true,
-                        onTap: () =>
-                            context.read<BrowseNavigationCubit>().push(item),
-                      );
-                    },
-                  ),
-                  const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
-                ],
+              return ScrollChromeListener(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverList.builder(
+                      itemCount: favorites.length,
+                      itemBuilder: (_, i) {
+                        final item = favorites[i];
+                        return BrowseItemTile(
+                          item: item,
+                          showFavoriteToggle: true,
+                          onTap: () =>
+                              context.read<BrowseNavigationCubit>().push(item),
+                        );
+                      },
+                    ),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+                  ],
+                ),
               );
             },
           );
@@ -78,9 +81,11 @@ class _Body extends StatelessWidget {
                     .navigateToBreadcrumb(i),
               ),
               Expanded(
-                child: BrowseContent(
-                  key: ValueKey(current.id),
-                  current: current,
+                child: ScrollChromeListener(
+                  child: BrowseContent(
+                    key: ValueKey(current.id),
+                    current: current,
+                  ),
                 ),
               ),
             ],

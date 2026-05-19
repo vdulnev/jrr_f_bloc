@@ -36,9 +36,18 @@ class _AppState extends State<App> {
             repository: getIt<ConnectionRepository>(),
           ),
         ),
+        // Chrome visibility — toggled by ScrollChromeListener as the user
+        // scrolls. Lives at app scope so the shells can hide the
+        // mini-player in sync with the library header.
         BlocProvider<LibraryChromeCubit>(create: (_) => LibraryChromeCubit()),
       ],
-      child: _LifecycleScope(child: _MaterialApp(router: _router)),
+      child: BlocListener<NavigationCubit, AppTab>(
+        // Re-show chrome whenever the user switches tabs so leaving a
+        // scrolled library tab and coming back doesn't trap chrome
+        // hidden.
+        listener: (context, _) => context.read<LibraryChromeCubit>().set(true),
+        child: _LifecycleScope(child: _MaterialApp(router: _router)),
+      ),
     );
   }
 }

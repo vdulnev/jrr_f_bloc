@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
+import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../bloc/library_async_state.dart';
 import '../bloc/search_bloc.dart';
 import '../data/models/tracks.dart';
@@ -70,9 +71,11 @@ class _SearchTabState extends State<SearchTab> {
                   style: AppTextStyles.emptyState,
                 ),
               ),
-              LibData<Tracks>(:final value) => ListView.builder(
-                itemCount: value.length,
-                itemBuilder: (_, i) => LibraryItemTile(item: value[i]),
+              LibData<Tracks>(:final value) => ScrollChromeListener(
+                child: ListView.builder(
+                  itemCount: value.length,
+                  itemBuilder: (_, i) => LibraryItemTile(item: value[i]),
+                ),
               ),
             },
           ),
