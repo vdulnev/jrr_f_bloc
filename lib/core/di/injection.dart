@@ -24,7 +24,7 @@ import '../../features/offline/data/repositories/downloads_repository_impl.dart'
 import '../../features/offline/download_jobs_service.dart';
 import '../../features/offline/downloaded_tracks_service.dart';
 import '../../features/offline/services/download_service.dart';
-import '../../features/player/data/models/local_audio_quality.dart';
+import '../../features/player/audio_quality_service.dart';
 import '../../features/player/data/repositories/player_repository.dart';
 import '../../features/player/data/repositories/player_repository_impl.dart';
 import '../../features/player/data/repositories/recently_played_repository.dart';
@@ -151,23 +151,27 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  // Audio-quality picker — owns the persisted conversion preset and the
+  // stream the popup companion subscribes to. The audio handlers read
+  // `state` on every URL build, so a change applies to the next track.
+  getIt.registerSingleton<AudioQualityService>(
+    AudioQualityService(prefs: prefs),
+  );
+
   // Audio handlers — phone-side and Android Auto playback engines.
   final localAudioPlayer = AudioPlayer();
   final autoAudioPlayer = AudioPlayer();
 
-  LocalAudioQuality resolveQuality() =>
-      LocalAudioQuality.fromName(prefs.getString('local_audio_quality'));
-
   final localHandler = LocalPlayerService(
     player: localAudioPlayer,
     talker: getIt<Talker>(),
-    qualityResolver: resolveQuality,
+    qualityResolver: () => getIt<AudioQualityService>().state,
   );
 
   final autoHandler = AndroidAutoPlayerService(
     player: autoAudioPlayer,
     talker: getIt<Talker>(),
-    qualityResolver: resolveQuality,
+    qualityResolver: () => getIt<AudioQualityService>().state,
   );
 
   final mainHandler = await AudioService.init(

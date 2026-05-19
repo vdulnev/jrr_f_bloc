@@ -1,21 +1,28 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../audio_quality_service.dart';
 import '../data/models/local_audio_quality.dart';
 
-const _kQualityKey = 'local_audio_quality';
-
-/// Holds the user-selected MCWS conversion preset for the local zone.
-/// Persists to SharedPreferences so the choice survives restarts.
+/// Companion of the audio-quality popup. Mirrors [AudioQualityService]
+/// state into widget rebuilds and forwards selections back to the
+/// service.
 class LocalAudioQualityCubit extends Cubit<LocalAudioQuality> {
-  final SharedPreferences _prefs;
+  final AudioQualityService _service;
+  StreamSubscription<LocalAudioQuality>? _sub;
 
-  LocalAudioQualityCubit({required SharedPreferences prefs})
-    : _prefs = prefs,
-      super(LocalAudioQuality.fromName(prefs.getString(_kQualityKey)));
+  LocalAudioQualityCubit({required AudioQualityService service})
+    : _service = service,
+      super(service.state) {
+    _sub = _service.stream.listen(emit);
+  }
 
-  Future<void> set(LocalAudioQuality quality) async {
-    await _prefs.setString(_kQualityKey, quality.name);
-    emit(quality);
+  Future<void> set(LocalAudioQuality quality) => _service.set(quality);
+
+  @override
+  Future<void> close() async {
+    await _sub?.cancel();
+    return super.close();
   }
 }
