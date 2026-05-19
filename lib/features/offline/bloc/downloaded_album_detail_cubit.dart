@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../library/data/models/tracks.dart';
 import '../data/models/downloaded_track.dart';
 import '../downloaded_tracks_service.dart';
-
-typedef DownloadedAlbumDetailState = Tracks;
+import 'downloaded_album_detail_state.dart';
 
 /// Companion of [DownloadedAlbumDetailScreen]. Filters and sorts
 /// downloaded tracks for a specific albumGroupId.
@@ -17,17 +16,20 @@ class DownloadedAlbumDetailCubit extends Cubit<DownloadedAlbumDetailState> {
     required this.albumGroupId,
     required DownloadedTracksService service,
   }) : _service = service,
-       super(_compute(albumGroupId, service.state)) {
+       super(
+         DownloadedAlbumDetailState(
+           tracks: _compute(albumGroupId, service.state),
+         ),
+       ) {
     _sub = _service.stream.listen((s) {
       final next = _compute(albumGroupId, s);
-      if (!_stateEquals(next, state)) emit(next);
+      if (!_tracksEquals(next, state.tracks)) {
+        emit(DownloadedAlbumDetailState(tracks: next));
+      }
     });
   }
 
-  static DownloadedAlbumDetailState _compute(
-    String albumGroupId,
-    List<DownloadedTrack> all,
-  ) {
+  static Tracks _compute(String albumGroupId, List<DownloadedTrack> all) {
     final filtered =
         all
             .where((t) => t.albumGroupId == albumGroupId)
@@ -41,10 +43,7 @@ class DownloadedAlbumDetailCubit extends Cubit<DownloadedAlbumDetailState> {
     return Tracks(tracks: filtered);
   }
 
-  static bool _stateEquals(
-    DownloadedAlbumDetailState a,
-    DownloadedAlbumDetailState b,
-  ) {
+  static bool _tracksEquals(Tracks a, Tracks b) {
     if (identical(a, b)) return true;
     if (a.tracks.length != b.tracks.length) return false;
     for (var i = 0; i < a.tracks.length; i++) {

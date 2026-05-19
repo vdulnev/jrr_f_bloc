@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/sub_screen_header.dart';
 import '../../library/widgets/album_row_tile.dart';
 import '../bloc/downloaded_albums_cubit.dart';
+import '../bloc/downloaded_albums_state.dart';
 import '../downloaded_tracks_service.dart';
 import 'downloaded_navigation.dart';
 
@@ -36,11 +37,12 @@ class DownloadedAlbumsScreen extends StatelessWidget {
                 child:
                     BlocBuilder<DownloadedAlbumsCubit, DownloadedAlbumsState>(
                       builder: (context, state) {
-                        if (state.isEmpty) return const _EmptyAlbums();
+                        final albums = state.albums;
+                        if (albums.isEmpty) return const _EmptyAlbums();
                         return ListView.builder(
-                          itemCount: state.length,
+                          itemCount: albums.length,
                           itemBuilder: (_, i) {
-                            final album = state[i];
+                            final album = albums[i];
                             return AlbumRowTile(
                               album: album,
                               onTap: () => pushDownloadedAlbumDetail(

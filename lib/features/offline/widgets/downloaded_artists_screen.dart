@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../player/player_command_service.dart';
 import '../bloc/downloaded_artists_cubit.dart';
+import '../bloc/downloaded_artists_state.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../downloaded_tracks_service.dart';
@@ -25,15 +26,16 @@ class DownloadedArtistsScreen extends StatelessWidget {
       ),
       child: BlocBuilder<DownloadedArtistsCubit, DownloadedArtistsState>(
         builder: (context, state) {
-          if (state.isEmpty) return const _EmptyState();
+          final groups = state.groups;
+          if (groups.isEmpty) return const _EmptyState();
           return ScrollChromeListener(
             child: CustomScrollView(
               slivers: [
                 SliverList.builder(
-                  itemCount: state.length,
+                  itemCount: groups.length,
                   itemBuilder: (_, i) => _ArtistRow(
-                    artist: state[i].artist,
-                    tracks: state[i].tracks,
+                    artist: groups[i].artist,
+                    tracks: groups[i].tracks,
                   ),
                 ),
                 const SliverPadding(padding: EdgeInsets.only(bottom: 16)),

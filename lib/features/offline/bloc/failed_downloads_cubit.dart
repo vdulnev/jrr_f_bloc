@@ -6,10 +6,11 @@ import '../data/models/download_job.dart';
 import '../data/models/download_state.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../download_jobs_service.dart';
+import 'failed_downloads_state.dart';
 
-/// Companion of the server-manager FAILED DOWNLOADS section. State is
+/// Companion of the server-manager FAILED DOWNLOADS section. State holds
 /// the filtered list of jobs whose `state == DownloadState.failed`.
-class FailedDownloadsCubit extends Cubit<List<DownloadJob>> {
+class FailedDownloadsCubit extends Cubit<FailedDownloadsState> {
   final DownloadJobsService _jobs;
   final DownloadsRepository _repo;
   StreamSubscription<List<DownloadJob>>? _sub;
@@ -19,10 +20,12 @@ class FailedDownloadsCubit extends Cubit<List<DownloadJob>> {
     required DownloadsRepository repo,
   }) : _jobs = jobs,
        _repo = repo,
-       super(_filter(jobs.state)) {
+       super(FailedDownloadsState(jobs: _filter(jobs.state))) {
     _sub = _jobs.stream.listen((s) {
       final next = _filter(s);
-      if (!_listEquals(next, state)) emit(next);
+      if (!_listEquals(next, state.jobs)) {
+        emit(FailedDownloadsState(jobs: next));
+      }
     });
   }
 

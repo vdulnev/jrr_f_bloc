@@ -6,9 +6,7 @@ import '../../player/player_command_service.dart';
 import '../data/models/downloaded_track.dart';
 import '../data/repositories/downloads_repository.dart';
 import '../downloaded_tracks_service.dart';
-
-typedef DownloadedArtistsState =
-    List<({String artist, List<DownloadedTrack> tracks})>;
+import 'downloaded_artists_state.dart';
 
 /// Companion of [DownloadedArtistsScreen]. Aggregates downloaded tracks
 /// into a sorted list of artists. Provides action methods for bulk
@@ -26,14 +24,16 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
   }) : _service = service,
        _repo = repo,
        _commands = commands,
-       super(_compute(service.state)) {
+       super(DownloadedArtistsState(groups: _compute(service.state))) {
     _sub = _service.stream.listen((s) {
       final next = _compute(s);
-      if (!_stateEquals(next, state)) emit(next);
+      if (!_groupsEquals(next, state.groups)) {
+        emit(DownloadedArtistsState(groups: next));
+      }
     });
   }
 
-  static DownloadedArtistsState _compute(List<DownloadedTrack> all) {
+  static List<ArtistGroup> _compute(List<DownloadedTrack> all) {
     final Map<String, List<DownloadedTrack>> groups = {};
     for (final t in all) {
       final artist = t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;
@@ -48,7 +48,7 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
         .toList();
   }
 
-  static bool _stateEquals(DownloadedArtistsState a, DownloadedArtistsState b) {
+  static bool _groupsEquals(List<ArtistGroup> a, List<ArtistGroup> b) {
     if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {

@@ -10,8 +10,8 @@ import '../../../core/di/injection.dart';
 import '../../../core/logging/file_log_observer.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/bloc/failed_downloads_cubit.dart';
+import '../../offline/bloc/failed_downloads_state.dart';
 import '../../offline/bloc/offline_storage_cubit.dart';
-import '../../offline/data/models/download_job.dart';
 import '../../offline/data/repositories/downloads_repository.dart';
 import '../../offline/download_jobs_service.dart';
 import '../../offline/downloaded_tracks_service.dart';
@@ -280,8 +280,9 @@ class _FailedDownloadsSection extends StatelessWidget {
         jobs: getIt<DownloadJobsService>(),
         repo: getIt<DownloadsRepository>(),
       ),
-      child: BlocBuilder<FailedDownloadsCubit, List<DownloadJob>>(
-        builder: (context, failed) {
+      child: BlocBuilder<FailedDownloadsCubit, FailedDownloadsState>(
+        builder: (context, state) {
+          final failed = state.jobs;
           if (failed.isEmpty) return const SizedBox.shrink();
           final cubit = context.read<FailedDownloadsCubit>();
           return Column(

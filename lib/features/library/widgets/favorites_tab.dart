@@ -5,9 +5,10 @@ import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../../favorites/bloc/favorites_tab_cubit.dart';
+import '../../favorites/bloc/favorites_tab_state.dart';
 import '../../favorites/favorites_service.dart';
 import '../bloc/browse_navigation_cubit.dart';
-import '../data/models/browse_item.dart';
+import '../bloc/browse_navigation_state.dart';
 import 'browse_breadcrumb.dart';
 import 'browse_content.dart';
 import 'browse_item_tile.dart';
@@ -36,11 +37,13 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BrowseNavigationCubit, List<BrowseItem>>(
-      builder: (context, stack) {
+    return BlocBuilder<BrowseNavigationCubit, BrowseNavigationState>(
+      builder: (context, navState) {
+        final stack = navState.stack;
         if (stack.isEmpty) {
-          return BlocBuilder<FavoritesTabCubit, List<BrowseItem>>(
-            builder: (context, favorites) {
+          return BlocBuilder<FavoritesTabCubit, FavoritesTabState>(
+            builder: (context, favoritesState) {
+              final favorites = favoritesState.items;
               if (favorites.isEmpty) return const _EmptyState();
               return ScrollChromeListener(
                 child: CustomScrollView(

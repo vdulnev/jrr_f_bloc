@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../shared/widgets/scroll_chrome_listener.dart';
 import '../bloc/browse_navigation_cubit.dart';
-import '../data/models/browse_item.dart';
+import '../bloc/browse_navigation_state.dart';
 import 'browse_breadcrumb.dart';
 import 'browse_content.dart';
 
@@ -24,8 +24,9 @@ class _BrowseScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BrowseNavigationCubit, List<BrowseItem>>(
-      builder: (context, stack) {
+    return BlocBuilder<BrowseNavigationCubit, BrowseNavigationState>(
+      builder: (context, navState) {
+        final stack = navState.stack;
         if (stack.isEmpty) {
           // Should never happen for the browse scope — its initial state
           // includes the root crumb.

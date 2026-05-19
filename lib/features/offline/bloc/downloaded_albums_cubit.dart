@@ -4,8 +4,7 @@ import '../../../shared/extensions/string_extensions.dart';
 import '../../library/data/models/album.dart';
 import '../data/models/downloaded_track.dart';
 import '../downloaded_tracks_service.dart';
-
-typedef DownloadedAlbumsState = List<Album>;
+import 'downloaded_albums_state.dart';
 
 /// Companion of [DownloadedAlbumsScreen]. Filters and sorts downloaded
 /// albums for a specific artist.
@@ -18,17 +17,16 @@ class DownloadedAlbumsCubit extends Cubit<DownloadedAlbumsState> {
     required this.artist,
     required DownloadedTracksService service,
   }) : _service = service,
-       super(_compute(artist, service.state)) {
+       super(DownloadedAlbumsState(albums: _compute(artist, service.state))) {
     _sub = _service.stream.listen((s) {
       final next = _compute(artist, s);
-      if (!_listEquals(next, state)) emit(next);
+      if (!_listEquals(next, state.albums)) {
+        emit(DownloadedAlbumsState(albums: next));
+      }
     });
   }
 
-  static DownloadedAlbumsState _compute(
-    String artist,
-    List<DownloadedTrack> all,
-  ) {
+  static List<Album> _compute(String artist, List<DownloadedTrack> all) {
     final groups = <String, Album>{};
     for (final t in all) {
       final tArtist = t.albumArtist.isEmpty ? 'Unknown Artist' : t.albumArtist;

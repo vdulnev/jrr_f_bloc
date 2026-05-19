@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../library/bloc/library_async_state.dart';
 import '../../library/widgets/track_list_scaffold.dart';
 import '../bloc/downloaded_album_detail_cubit.dart';
+import '../bloc/downloaded_album_detail_state.dart';
 import '../downloaded_tracks_service.dart';
 
 @RoutePage()
@@ -24,7 +25,8 @@ class DownloadedAlbumDetailScreen extends StatelessWidget {
       ),
       child:
           BlocBuilder<DownloadedAlbumDetailCubit, DownloadedAlbumDetailState>(
-            builder: (context, tracks) {
+            builder: (context, state) {
+              final tracks = state.tracks;
               final first = tracks.tracks.isNotEmpty
                   ? tracks.tracks.first
                   : null;

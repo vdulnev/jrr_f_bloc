@@ -37,12 +37,16 @@ is a refactor candidate.
    disallowed from widget code. Cubits/blocs are the one place where
    side-effect dependencies get resolved.
 
-3. **The cubit/bloc state surface is one immutable state object.** A
-   widget's bloc exposes `state` (and `stream` for subscribers) — nothing
-   else. No public getters for "convenience" fields, no public streams,
-   no public service references, no public mutable lists. All data the
-   widget needs lives on the single state class; updates flow through
-   `emit(newState)`.
+3. **The cubit/bloc state surface is one immutable Freezed data class.**
+   A widget's bloc exposes `state` (and `stream` for subscribers) —
+   nothing else. The state is a `@freezed abstract class … with _$<Name>`
+   (Freezed 3.x), giving free `==` / `hashCode` / `copyWith` and a single
+   value-equal type for `BlocBuilder` diffs. No hand-written immutable
+   wrappers, no public getters for "convenience" fields, no public
+   streams, no public service references, no public mutable lists. All
+   data the widget needs lives on the Freezed class; updates flow through
+   `emit(newState)`. Tiny one-or-two-field shapes may use a Dart record
+   typedef instead of Freezed (e.g. `typedef MiniPlayerState = ({PlayerStatus? status})`).
 
 4. **Widget/cubit names are paired** — `SomeWidget` ↔ `SomeCubit` (or
    `SomeBloc`). Naming the cubit after what it does (`AuthGateCubit`,

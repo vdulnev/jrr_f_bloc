@@ -6,7 +6,7 @@ import '../data/models/player_status.dart';
 part 'now_playing_state.freezed.dart';
 
 @freezed
-class NowPlayingState with _$NowPlayingState {
+sealed class NowPlayingState with _$NowPlayingState {
   const factory NowPlayingState.loading() = NowPlayingLoading;
   const factory NowPlayingState.data({
     required Zone zone,
