@@ -56,6 +56,18 @@ is a refactor candidate.
    the trailing `Screen` / `Widget` / `Panel` / `Tile` suffix and append
    `Cubit` or `Bloc`. State classes follow the same root: `SomeState`.
 
+5. **NEVER use the null assertion operator (`!`).** No `foo!`, no
+   `bar!.baz`, no `map[key]!`. Null assertions trade a compile-time
+   guarantee for a runtime crash and leak the assumption "this can't be
+   null here" out of the type system, where the next refactor will
+   silently invalidate it. Acceptable alternatives, in order of
+   preference: (a) narrow with a local — `final x = nullable; if (x !=
+   null) use(x);`; (b) pattern-match — `if (nullable case final x?)` or
+   `switch (nullable) { final x? => …, null => … }`; (c) collection
+   `?`-spreads — `[?maybe]`; (d) `??` for defaults; (e) tighten the type
+   so the field is non-nullable in the first place. The negated type
+   check `is!` is fine — that's not a null assertion.
+
 These rules trade some keystrokes for tight blast-radius: any UI bug
 points at exactly one cubit/bloc; any cubit/bloc test fakes one
 dependency graph; refactors to the repository layer never reach widget

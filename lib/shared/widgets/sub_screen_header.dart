@@ -49,23 +49,23 @@ class SubScreenHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (subtitle != null)
+                    if (subtitle case final s?)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          subtitle!.toUpperCase(),
+                          s.toUpperCase(),
                           style: AppTextStyles.sectionLabel,
                         ),
                       ),
                     titleWidget ??
-                        Text(title!, style: AppTextStyles.subScreenTitle),
+                        Text(title ?? '', style: AppTextStyles.subScreenTitle),
                   ],
                 ),
               ),
               ?trailing,
             ],
           ),
-          if (content != null) ...[const SizedBox(height: 8), content!],
+          if (content case final c?) ...[const SizedBox(height: 8), c],
         ],
       ),
     );

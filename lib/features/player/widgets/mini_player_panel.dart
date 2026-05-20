@@ -48,11 +48,10 @@ class _Body extends StatelessWidget {
     final progress = durationMs > 0
         ? (positionMs / durationMs).clamp(0.0, 1.0)
         : 0.0;
-    final name = status?.name.isNotEmpty == true
-        ? status!.name
-        : 'Unknown Track';
-    final artist = status?.artist.isNotEmpty == true
-        ? status!.artist
+    final s = status;
+    final name = (s != null && s.name.isNotEmpty) ? s.name : 'Unknown Track';
+    final artist = (s != null && s.artist.isNotEmpty)
+        ? s.artist
         : 'Unknown Artist';
     final isPlaying = status?.state == PlaybackState.playing;
 

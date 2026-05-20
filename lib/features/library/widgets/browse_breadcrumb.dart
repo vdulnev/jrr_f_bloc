@@ -23,11 +23,11 @@ class BrowseBreadcrumb extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Row(
         children: [
-          if (prefix != null) ...[
+          if (prefix case final p?) ...[
             GestureDetector(
               onTap: () => onTap(-1),
               child: Text(
-                prefix!,
+                p,
                 style: AppTextStyles.monoLabel.copyWith(color: AppColors.text3),
               ),
             ),

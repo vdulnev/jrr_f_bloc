@@ -21,9 +21,8 @@ sealed class ArtworkState with _$ArtworkState {
     if (fileKey == null || fileKey < 0) return null;
     final address = serverAddress;
     if (address == null || address.isEmpty) return null;
-    final tokenParam = (token != null && token!.isNotEmpty)
-        ? '&Token=$token'
-        : '';
+    final t = token;
+    final tokenParam = (t != null && t.isNotEmpty) ? '&Token=$t' : '';
     return '$address/MCWS/v1/File/GetImage?File=$fileKey$tokenParam';
   }
 }

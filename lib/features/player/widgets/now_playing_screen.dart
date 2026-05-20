@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:talker/talker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
@@ -26,6 +27,8 @@ class NowPlayingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final talker = getIt<Talker>();
+
     return BlocProvider<NowPlayingCubit>(
       create: (_) => NowPlayingCubit(
         activeZone: getIt<ActiveZoneService>(),
@@ -38,13 +41,15 @@ class NowPlayingScreen extends StatelessWidget {
           return state.map(
             loading: (_) => const Scaffold(body: LoadingView()),
             data: (d) {
-              final fileKey = d.status?.fileKey ?? -1;
-              if (fileKey < 0) {
-                return _EmptyState(zone: d.zone, status: d.status);
+              final status = d.status;
+              final fileKey = status?.fileKey ?? -1;
+              if (status == null || fileKey < 0) {
+                return _EmptyState(zone: d.zone, status: status);
               }
+              talker.debug('NowPlayingScreen: data $d');
               return _NowPlayingBody(
                 zone: d.zone,
-                status: d.status!,
+                status: status,
                 track: d.track,
               );
             },

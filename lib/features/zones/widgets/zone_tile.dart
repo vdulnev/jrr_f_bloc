@@ -63,15 +63,12 @@ class ZoneTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (_subtitle(zone) != null)
+                  if (_subtitle(zone) case final subtitle?)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
                         children: [
-                          Text(
-                            _subtitle(zone)!,
-                            style: AppTextStyles.monoLabel,
-                          ),
+                          Text(subtitle, style: AppTextStyles.monoLabel),
                           // Audio-quality popup applies to any zone that
                           // streams through the local just_audio handler —
                           // Local and Android Auto.

@@ -147,8 +147,8 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         final deletedTrack = tracks.firstWhere(
           (t) => t.albumGroupId == albumGroupId,
         );
-        if (deletedTrack.artworkPath != null) {
-          final artFile = File(deletedTrack.artworkPath!);
+        if (deletedTrack.artworkPath case final path?) {
+          final artFile = File(path);
           if (await artFile.exists()) {
             await artFile.delete();
           }
@@ -340,9 +340,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       bytesDone: row.bytesDone,
       bytesTotal: row.bytesTotal,
       enqueuedAt: DateTime.fromMillisecondsSinceEpoch(row.enqueuedAt),
-      startedAt: row.startedAt != null
-          ? DateTime.fromMillisecondsSinceEpoch(row.startedAt!)
-          : null,
+      startedAt: switch (row.startedAt) {
+        final ts? => DateTime.fromMillisecondsSinceEpoch(ts),
+        null => null,
+      },
       error: row.error,
     );
   }

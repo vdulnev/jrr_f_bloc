@@ -43,9 +43,10 @@ class DownloadedArtistsCubit extends Cubit<DownloadedArtistsState> {
     final sortedArtists = groups.keys.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    return sortedArtists
-        .map((artist) => (artist: artist, tracks: groups[artist]!))
-        .toList();
+    return [
+      for (final artist in sortedArtists)
+        (artist: artist, tracks: groups[artist] ?? const <DownloadedTrack>[]),
+    ];
   }
 
   static bool _groupsEquals(List<ArtistGroup> a, List<ArtistGroup> b) {

@@ -22,9 +22,9 @@ class ConnectingScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text('Connecting to', style: AppTextStyles.itemSubtitle),
             const SizedBox(height: 8),
-            if (address != null)
+            if (address case final addr?)
               Text(
-                address!,
+                addr,
                 style: AppTextStyles.monoLabel.copyWith(
                   fontSize: 14,
                   color: AppColors.text,

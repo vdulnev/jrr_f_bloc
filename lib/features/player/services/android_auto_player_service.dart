@@ -1117,13 +1117,13 @@ class AndroidAutoPlayerService extends LocalPlayerServiceBase with SeekHandler {
             playbackState.add(
               _baseState(
                 playing: _player.playing,
-                processing: const {
-                  ProcessingState.idle: AudioProcessingState.idle,
-                  ProcessingState.loading: AudioProcessingState.loading,
-                  ProcessingState.buffering: AudioProcessingState.buffering,
-                  ProcessingState.ready: AudioProcessingState.ready,
-                  ProcessingState.completed: AudioProcessingState.completed,
-                }[_player.processingState]!,
+                processing: switch (_player.processingState) {
+                  ProcessingState.idle => AudioProcessingState.idle,
+                  ProcessingState.loading => AudioProcessingState.loading,
+                  ProcessingState.buffering => AudioProcessingState.buffering,
+                  ProcessingState.ready => AudioProcessingState.ready,
+                  ProcessingState.completed => AudioProcessingState.completed,
+                },
                 queueIndex: _player.currentIndex,
               ),
             );

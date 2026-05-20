@@ -64,11 +64,13 @@ class McwsPlayerService implements PlayerController {
 
   Zone? get _zone => _activeZone.state;
 
-  bool get _isRemoteZone =>
-      _zone != null &&
-      !_zone!.isLocal &&
-      !_zone!.isOffline &&
-      !_zone!.isAndroidAuto;
+  bool get _isRemoteZone {
+    final zone = _zone;
+    return zone != null &&
+        !zone.isLocal &&
+        !zone.isOffline &&
+        !zone.isAndroidAuto;
+  }
 
   void _onZoneChanged(Zone? zone) {
     if (zone == null || !_isRemoteZone) {

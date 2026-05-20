@@ -308,7 +308,7 @@ class _FailedDownloadsSection extends StatelessWidget {
                         title: failed[i].track.name,
                         subtitle: [
                           failed[i].track.artist,
-                          if (failed[i].error != null) failed[i].error!,
+                          ?failed[i].error,
                         ].where((s) => s.isNotEmpty).join(' • '),
                         onRetry: () => cubit.retry(failed[i]),
                         onRemove: () => cubit.remove(failed[i]),
